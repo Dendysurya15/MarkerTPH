@@ -24,7 +24,6 @@
             android:layout_height="match_parent"
             android:orientation="horizontal" android:weightSum="4">
 
-
             <ImageView
                 android:layout_width="10dp"
                 android:layout_weight="1"
@@ -95,22 +94,50 @@
 
     </com.google.android.material.card.MaterialCardView>
 
-    <androidx.constraintlayout.widget.Guideline
-        android:id="@+id/bottomGuideline"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:orientation="horizontal"
-        app:layout_constraintGuide_percent="0.9" />
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_marginHorizontal="10dp"
+        android:layout_marginVertical="5dp"
+        android:id="@+id/list_menu_upload_data"
+        app:layout_constraintTop_toBottomOf="@id/navbar"
+        android:layout_height="wrap_content" android:orientation="horizontal">
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:id="@+id/list_item_tersimpan"
+            android:foreground="?attr/selectableItemBackground"
+            android:text="Tersimpan"
+            android:gravity="center_vertical"
+            android:padding="15dp"
+            android:background="@drawable/bottom_border_only"
+            android:textSize="14dp"
+            android:textStyle="bold" />
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:id="@+id/list_item_terupload"
+            android:text="Terupload"
+            android:gravity="center_vertical"
+            android:padding="15dp"
+            android:foreground="?attr/selectableItemBackground"
+            android:background="@drawable/bottom_border_only"
+            android:textSize="14dp"
+            android:textStyle="bold" />
+    </LinearLayout>
+
 
     <LinearLayout
+        android:id="@+id/contentLayout"
         android:layout_width="match_parent"
         android:layout_height="0dp"
         android:orientation="vertical"
         android:layout_marginHorizontal="5dp"
         android:layout_marginTop="5dp"
         android:background="@drawable/rounded_shadow_border"
-        app:layout_constraintTop_toBottomOf="@id/navbar"
-        app:layout_constraintBottom_toTopOf="@id/bottomGuideline">
+        app:layout_constraintTop_toBottomOf="@id/list_menu_upload_data"
+        app:layout_constraintBottom_toBottomOf="parent">
 
         <!-- Fixed Header -->
         <include

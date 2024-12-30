@@ -69,10 +69,10 @@ class TPHViewModel(application: Application, private val repository: TPHReposito
         }
     }
 
-    fun loadDataAllTPH() {
+    fun loadDataAllTPH(archive: Int = 0) {
         viewModelScope.launch {
             val dataUnit = withContext(Dispatchers.IO) {
-                repository.fetchAllData()
+                repository.fetchAllData(archive)
             }
             _dataTPHAll.value = dataUnit
         }

@@ -47,10 +47,11 @@ class TPHRepository(context: Context) {
     }
 
     @SuppressLint("Range")
-    fun fetchAllData(): List<TPHModel> {
+    fun fetchAllData(archive: Int = 0): List<TPHModel> {
         val dataTPH = mutableListOf<TPHModel>()
         val db = databaseHelper.readableDatabase
-        val cursor = db.rawQuery("SELECT * FROM $DB_TABLE_TPH WHERE $DB_ARCHIVE = 0", null)
+        val cursor = db.rawQuery("SELECT * FROM $DB_TABLE_TPH WHERE $DB_ARCHIVE = ?",
+            arrayOf(archive.toString()))
 
         cursor.use {
             while (it.moveToNext()) {
