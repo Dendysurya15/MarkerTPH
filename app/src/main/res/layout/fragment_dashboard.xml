@@ -1,0 +1,138 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@color/blueLight"
+    tools:context=".ui.view.ui.dashboard.DashboardFragment">
+
+
+
+
+    <com.google.android.material.card.MaterialCardView
+        android:layout_width="match_parent"
+        android:layout_height="85dp"
+        android:backgroundTint="@color/white"
+        app:cardCornerRadius="0dp"
+        android:id="@+id/navbar"
+        app:cardElevation="50dp"
+        tools:ignore="MissingConstraints">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:orientation="horizontal" android:weightSum="4">
+
+
+            <ImageView
+                android:layout_width="10dp"
+                android:layout_weight="1"
+                android:layout_marginLeft="20dp"
+                android:layout_height="50dp"
+                android:layout_gravity="center_vertical"
+                android:foreground="?attr/selectableItemBackground"
+                android:src="@drawable/cbi"
+                />
+            <LinearLayout
+                android:layout_width="wrap_content"
+                android:orientation="vertical"
+                android:paddingLeft="10dp"
+                android:layout_height="match_parent"
+                android:layout_weight="2">
+
+                <TextView
+                    android:id="@+id/tvFeatureName"
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:text="List Data Tersimpan"
+                    android:fontFamily="@font/inter_bold"
+                    android:textColor="@color/black"
+                    android:textSize="18dp"
+                    android:gravity="bottom"
+                    android:layout_weight="1"
+                    android:lineSpacingExtra="2dp" />
+
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:fontFamily="@font/inter_regular"
+                    android:textSize="13dp"
+                    android:gravity="top"
+                    android:textStyle="italic"
+                    android:text="Versi 1.5.84"
+                    android:layout_weight="1"
+                    android:lineSpacingExtra="2dp" /> <!-- Tighter line spacing -->
+            </LinearLayout>
+
+
+            <LinearLayout
+                android:layout_width="wrap_content"
+                android:orientation="vertical"
+                android:gravity="center"
+                android:visibility="invisible"
+                android:layout_height="match_parent"
+                android:layout_weight="1">
+                <ImageView
+                    android:layout_width="match_parent"
+                    android:layout_height="40dp"
+                    android:id="@+id/statusLocation"
+                    android:src="@drawable/baseline_wrong_location_24"
+                    app:tint="@color/colorRedDark" />
+                <!--                <TextView-->
+                <!--                    android:layout_width="match_parent"-->
+                <!--                    android:layout_height="wrap_content"-->
+                <!--                    android:id="@+id/rangeLocation"-->
+                <!--                    android:text="12.5 m"-->
+                <!--                    android:fontFamily="@font/inter_medium"-->
+                <!--                    android:textColor="@color/black"-->
+                <!--                    android:textSize="12dp"-->
+                <!--                    android:gravity="center" />-->
+            </LinearLayout>
+        </LinearLayout>
+
+
+
+    </com.google.android.material.card.MaterialCardView>
+
+    <androidx.constraintlayout.widget.Guideline
+        android:id="@+id/bottomGuideline"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        app:layout_constraintGuide_percent="0.9" />
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:orientation="vertical"
+        android:layout_marginHorizontal="5dp"
+        android:layout_marginTop="5dp"
+        android:background="@drawable/rounded_shadow_border"
+        app:layout_constraintTop_toBottomOf="@id/navbar"
+        app:layout_constraintBottom_toTopOf="@id/bottomGuideline">
+
+        <!-- Fixed Header -->
+        <include
+            android:id="@+id/tableHeader"
+            layout="@layout/table_header_layout"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="10dp"/>
+
+        <!-- Scrollable Content -->
+        <androidx.recyclerview.widget.RecyclerView
+            android:id="@+id/rvTableData"
+            android:layout_width="match_parent"
+            android:layout_height="0dp"
+            android:layout_weight="1"
+            android:layout_marginTop="3dp"
+            android:paddingBottom="10dp"
+            android:layout_marginBottom="5dp"
+            android:clipToPadding="false"
+            tools:listitem="@layout/table_item_row"
+            tools:itemCount="4"/>
+
+    </LinearLayout>
+
+</androidx.constraintlayout.widget.ConstraintLayout>

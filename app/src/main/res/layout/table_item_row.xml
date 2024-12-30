@@ -1,0 +1,66 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+
+        android:layout_marginHorizontal="10dp"
+        android:background="@drawable/rounded_background_border_white"
+        tools:ignore="MissingConstraints">
+
+        <FrameLayout
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
+            android:layout_weight="0.4">
+
+            <CheckBox
+                android:id="@+id/checkBoxPanen"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="center"
+                android:minWidth="48dp"
+                android:minHeight="48dp"/>
+        </FrameLayout>
+
+        <TextView
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
+            android:layout_weight="1"
+            android:gravity="center_vertical"
+            android:id="@+id/tvItemTgl"
+            android:text=""
+            android:padding="15dp"
+            android:textStyle="bold" />
+
+
+
+        <TextView
+            android:layout_width="0dp"
+            android:id="@+id/tvItemEstateAfdeling"
+            android:layout_weight="1"
+            android:layout_height="wrap_content"
+            android:gravity="center_vertical"
+            android:text="NBE (OA) \n A03 - TPH 24"
+            android:padding="15dp"
+            android:textStyle="bold" />
+
+
+
+
+        <TextView
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
+            android:layout_weight="1"
+            android:id="@+id/tvItemLatLon"
+            android:text="-23433 \n 111.343"
+            android:padding="15dp"
+            android:gravity="center_vertical"
+            android:textStyle="bold" />
+
+    </LinearLayout>
+</androidx.constraintlayout.widget.ConstraintLayout>

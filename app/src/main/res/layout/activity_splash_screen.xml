@@ -1,0 +1,85 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/main"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    tools:context=".ui.view.SplashScreenActivity">
+
+
+    <ImageView
+        android:id="@+id/imageView"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:src="@drawable/login_img"
+        android:scaleType="centerCrop"
+        app:layout_constraintHeight_percent="0.6"
+        app:layout_constraintTop_toTopOf="parent" />
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:background="@drawable/splash_background_rounded"
+        android:orientation="vertical"
+        android:layout_marginBottom="0dp"
+        app:layout_constraintHeight_percent="0.5"
+        app:layout_constraintBottom_toBottomOf="parent">
+
+<!--        <TextView-->
+<!--            android:layout_width="match_parent"-->
+<!--            android:layout_height="wrap_content"-->
+<!--            android:textSize="19dp"-->
+<!--            android:gravity="left"-->
+<!--            android:fontFamily="@font/inter_medium"-->
+<!--            android:layout_marginHorizontal="30dp"-->
+<!--            android:layout_marginTop="30dp"-->
+<!--            android:textColor="@color/black"-->
+<!--            android:text="Selamat Datang" />-->
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:textSize="40dp"
+            android:layout_marginTop="20dp"
+            android:fontFamily="@font/inter_medium"
+            android:textColor="@color/black"
+            android:layout_marginHorizontal="30dp"
+            android:gravity="left"
+            android:layout_marginBottom="5dp"
+            android:text="Marker TPH" />
+
+<!--        <TextView-->
+<!--            android:layout_width="match_parent"-->
+<!--            android:layout_height="wrap_content"-->
+<!--            android:textSize="15dp"-->
+<!--            android:textColor="@color/black"-->
+<!--            android:layout_marginHorizontal="30dp"-->
+<!--            android:gravity="left"-->
+<!--            android:fontFamily="@font/inter_medium"-->
+<!--            android:text="testing" />-->
+
+        <View
+            android:layout_width="match_parent"
+            android:layout_height="0dp"
+            android:layout_weight="1" />
+
+        <ImageView
+            android:layout_width="match_parent"
+            android:layout_height="50dp"
+
+            android:layout_marginBottom="10dp"
+            android:scaleType="fitCenter" />
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:textSize="15dp"
+            android:textColor="@color/black"
+            android:gravity="center"
+            android:id="@+id/version_app"
+            android:fontFamily="@font/inter_medium"
+            android:layout_marginBottom="40dp"
+            android:text="Versi 1.5.73" />
+    </LinearLayout>
+
+</androidx.constraintlayout.widget.ConstraintLayout>
