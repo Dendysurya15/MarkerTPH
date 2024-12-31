@@ -76,4 +76,31 @@ class TPHRepository(context: Context) {
 
         return dataTPH
     }
+
+    fun deleteMultipleItems(ids: List<String>): Boolean {
+        val db = databaseHelper.writableDatabase
+        var success = true
+
+        try {
+            db.beginTransaction()
+
+            ids.forEach { id ->
+                val rowsAffected = db.delete(DatabaseHelper.DB_TABLE_TPH, "id=?", arrayOf(id))
+                if (rowsAffected <= 0) {
+                    success = false
+                }
+            }
+
+            if (success) {
+                db.setTransactionSuccessful()
+            }
+        } catch (e: Exception) {
+            success = false
+            e.printStackTrace()
+        } finally {
+            db.endTransaction()
+        }
+
+        return success
+    }
 }

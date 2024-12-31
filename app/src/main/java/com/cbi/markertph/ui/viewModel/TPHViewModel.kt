@@ -7,6 +7,7 @@ import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
+import com.cbi.markertph.data.database.DatabaseHelper.Companion.KEY_ID
 import com.cbi.markertph.data.model.TPHModel
 import com.cbi.markertph.data.repository.TPHRepository
 import kotlinx.coroutines.Dispatchers
@@ -20,8 +21,18 @@ class TPHViewModel(application: Application, private val repository: TPHReposito
 
 
     private val _dataTPHAll = MutableLiveData<List<TPHModel>>()
-
     val dataTPHAll: LiveData<List<TPHModel>> get() = _dataTPHAll
+
+
+    private val _deleteItemsResult = MutableLiveData<Boolean>()
+    val deleteItemsResult: LiveData<Boolean> = _deleteItemsResult
+
+    private val _resultCountDataArchive = MutableLiveData<Int>()
+    val resultCountDataArchive: LiveData<Int> = _resultCountDataArchive
+
+    private val _resultCountDataNonArchive = MutableLiveData<Int>()
+    val resultCountDataNonArchive: LiveData<Int> = _resultCountDataNonArchive
+
 
     fun insertPanenTBSVM(
         id: Int? = 0,
@@ -65,6 +76,37 @@ class TPHViewModel(application: Application, private val repository: TPHReposito
             } catch (e: Exception) {
                 e.printStackTrace()
                 _insertDBTPH.postValue(false)
+            }
+        }
+    }
+
+    fun countDataArchive() {
+        viewModelScope.launch {
+            val dataUnit = withContext(Dispatchers.IO) {
+                repository.fetchAllData(1)
+            }
+            _resultCountDataArchive.value = dataUnit.size
+        }
+    }
+
+    fun countDataNonArchive() {
+        viewModelScope.launch {
+            val dataUnit = withContext(Dispatchers.IO) {
+                repository.fetchAllData(0)
+            }
+            _resultCountDataNonArchive.value = dataUnit.size
+        }
+    }
+
+    fun deleteMultipleItems(items: List<Map<String, Any>>) {
+        viewModelScope.launch {
+            try {
+                val ids = items.map { it[KEY_ID].toString() }
+                val isDeleted = repository.deleteMultipleItems(ids)
+                _deleteItemsResult.value = isDeleted
+            } catch (e: Exception) {
+                e.printStackTrace()
+                _deleteItemsResult.value = false
             }
         }
     }

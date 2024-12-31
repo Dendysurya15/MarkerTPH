@@ -1,5 +1,6 @@
 package com.cbi.markertph.ui.view.ui.dashboard
 
+import android.content.res.ColorStateList
 import android.graphics.drawable.GradientDrawable
 import android.graphics.drawable.LayerDrawable
 import android.os.Bundle
@@ -9,6 +10,7 @@ import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.widget.LinearLayout
 import android.widget.TextView
 import android.widget.Toast
 import androidx.constraintlayout.widget.ConstraintLayout
@@ -34,8 +36,14 @@ import com.cbi.markertph.databinding.FragmentDashboardBinding
 import com.cbi.markertph.ui.adapter.TPHAdapter
 import com.cbi.markertph.ui.viewModel.LocationViewModel
 import com.cbi.markertph.ui.viewModel.TPHViewModel
+import com.cbi.markertph.utils.AlertDialogUtility
+import com.cbi.markertph.utils.AppUtils.vibrate
 import com.cbi.markertph.utils.LoadingDialog
 import com.google.android.material.bottomnavigation.BottomNavigationView
+import com.leinardi.android.speeddial.SpeedDialActionItem
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
 
 class DashboardFragment : Fragment() {
 
@@ -58,21 +66,52 @@ class DashboardFragment : Fragment() {
         _binding = FragmentDashboardBinding.inflate(inflater, container, false)
         val root: View = binding.root
 
-        binding.listItemTersimpan.apply {
-            setTextColor(ContextCompat.getColor(requireContext(), R.color.greendarkerbutton))
-            // Change stroke color
-            ((background as LayerDrawable).getDrawable(1) as GradientDrawable).setStroke(
-                4, // direct pixel value
+        binding.layoutItemTersimpan.apply {
+            // Change the stroke color of the LayerDrawable
+            val layerDrawable = binding.layoutItemTersimpan.background as LayerDrawable
+            val strokeDrawable = layerDrawable.getDrawable(1) as GradientDrawable
+            strokeDrawable.setStroke(
+                4, // Stroke width in dp
+                ContextCompat.getColor(requireContext(), R.color.greendarkerbutton) // New stroke color
+            )
+
+            // Update text color for `listItemTersimpan`
+            binding.listItemTersimpan.setTextColor(
+                ContextCompat.getColor(requireContext(), R.color.greendarkerbutton)
+            )
+
+            // Update the background color of `counterItemTersimpan`
+            binding.counterItemTersimpan.background = ContextCompat.getDrawable(
+                requireContext(),
+                R.drawable.rounded_box_small_border // Ensure you update this drawable
+            )
+            val counterBackground = binding.counterItemTersimpan.background as GradientDrawable
+            counterBackground.setColor(
                 ContextCompat.getColor(requireContext(), R.color.greendarkerbutton)
             )
         }
 
-        binding.listItemTerupload.apply {
-            setTextColor(ContextCompat.getColor(requireContext(), R.color.black))
-            // Change stroke color
-            ((background as LayerDrawable).getDrawable(1) as GradientDrawable).setStroke(
-                4, // direct pixel value
-                ContextCompat.getColor(requireContext(), R.color.white)
+
+        binding.layoutItemTerupload.apply {
+
+            val layerDrawable = binding.layoutItemTerupload.background as LayerDrawable
+            val strokeDrawable = layerDrawable.getDrawable(1) as GradientDrawable
+            strokeDrawable.setStroke(
+                4, // Stroke width in dp
+                ContextCompat.getColor(requireContext(), R.color.white) // New stroke color
+            )
+
+            binding.listItemTerupload.setTextColor(
+                ContextCompat.getColor(requireContext(), R.color.black)
+            )
+
+            binding.counterItemTerupload.background = ContextCompat.getDrawable(
+                requireContext(),
+                R.drawable.rounded_box_small_border // Ensure you update this drawable
+            )
+            val counterBackground = binding.counterItemTerupload.background as GradientDrawable
+            counterBackground.setColor(
+                ContextCompat.getColor(requireContext(), R.color.black)
             )
         }
 
@@ -80,37 +119,173 @@ class DashboardFragment : Fragment() {
         setupRecyclerView()
         setupMenuListeners()
         adjustBottomMargin()
-
+        setupSpeedDial()
         loadingDialog = LoadingDialog(requireContext())
-
-
 
         observeData()
 
         return root
     }
 
+    private fun handleUpload(selectedItems: List<Map<String, Any>>) {
+        AlertDialogUtility.withTwoActions(
+            requireContext(),
+            "Submit",
+            getString(R.string.confirmation_dialog_title),
+            "Apakah anda yakin untuk mengupload ${selectedItems.size} data?"
+        ) {
+            Toast.makeText(context, "${selectedItems.size} items selected for upload", Toast.LENGTH_SHORT).show()
+            tphAdapter.clearSelections()
+
+        }
+    }
+
+    private fun handleDelete(selectedItems: List<Map<String, Any>>) {
+        requireContext().vibrate()
+        AlertDialogUtility.withTwoActions(
+            requireContext(),
+            "Hapus",
+            getString(R.string.confirmation_dialog_title),
+            "Apakah anda yakin untuk menghapus ${selectedItems.size} data?",
+            ContextCompat.getColor(requireContext(), R.color.colorRedDark)
+        ) {
+
+            tphViewModel.deleteMultipleItems(selectedItems)
+            tphViewModel.deleteItemsResult.observe(viewLifecycleOwner) { isSuccess ->
+                if (isSuccess) {
+                    Toast.makeText(context, "Berhasil menghapus ${selectedItems.size} data", Toast.LENGTH_SHORT).show()
+                    observeData()
+                } else {
+                    Toast.makeText(context, "Gagal menghapus data", Toast.LENGTH_SHORT).show()
+                }
+
+                tphAdapter.clearSelections()
+            }
+
+        }
+    }
+
+    private fun setupSpeedDial() {
+
+
+        binding.dialTphList.apply {
+            addActionItem(
+                SpeedDialActionItem.Builder(R.id.uploadSelected, R.drawable.baseline_cloud_upload_24)
+                    .setLabel("Upload Item Terpilih")
+                    .setFabBackgroundColor(ContextCompat.getColor(requireContext(), R.color.greendarkerbutton))
+                    .create()
+            )
+
+            addActionItem(
+                SpeedDialActionItem.Builder(R.id.deleteSelected, R.drawable.baseline_delete_24)
+                    .setLabel("Hapus Item Terpilih")
+                    .setFabBackgroundColor(ContextCompat.getColor(requireContext(), R.color.colorRedDark))
+                    .create()
+            )
+
+            visibility = View.GONE // Hide initially
+
+            setOnActionSelectedListener { actionItem ->
+                when (actionItem.id) {
+
+                    R.id.deleteSelected -> {
+                        val selectedItems = tphAdapter.getSelectedItems()
+                        handleDelete(selectedItems)
+                        true
+                    }
+                    R.id.uploadSelected -> {
+                        val selectedItems = tphAdapter.getSelectedItems()
+                        handleUpload(selectedItems)
+                        true
+                    }
+                    else -> false
+                }
+            }
+        }
+
+        // Setup selection listener
+        tphAdapter.setOnSelectionChangedListener { selectedCount ->
+            binding.dialTphList.visibility = if (selectedCount > 0) View.VISIBLE else View.GONE
+
+        }
+
+
+    }
+
     private fun updateMenuState() {
-        binding.listItemTersimpan.apply {
-            setTextColor(ContextCompat.getColor(requireContext(),
-                if (currentArchiveState == 0) R.color.greendarkerbutton else R.color.black))
-            ((background as LayerDrawable).getDrawable(1) as GradientDrawable).setStroke(
-                4,
-                ContextCompat.getColor(requireContext(),
-                    if (currentArchiveState == 0) R.color.greendarkerbutton else R.color.white)
+        // Update the "Tersimpan" state
+        binding.layoutItemTersimpan.apply {
+            val isActive = currentArchiveState == 0
+
+            // Update text color for `listItemTersimpan`
+            binding.listItemTersimpan.setTextColor(
+                ContextCompat.getColor(
+                    requireContext(),
+                    if (isActive) R.color.greendarkerbutton else R.color.black
+                )
+            )
+
+            val layerDrawable = background as LayerDrawable
+            val strokeDrawable = layerDrawable.getDrawable(1) as GradientDrawable
+            strokeDrawable.setStroke(
+                4, // Stroke width in dp
+                ContextCompat.getColor(
+                    requireContext(),
+                    if (isActive) R.color.greendarkerbutton else R.color.white
+                )
+            )
+
+            binding.counterItemTersimpan.background = ContextCompat.getDrawable(
+                requireContext(),
+                R.drawable.rounded_box_small_border
+            )
+            val counterBackground = binding.counterItemTersimpan.background as GradientDrawable
+            counterBackground.setColor(
+                ContextCompat.getColor(
+                    requireContext(),
+                    if (isActive) R.color.greendarkerbutton else R.color.black
+                )
             )
         }
 
-        binding.listItemTerupload.apply {
-            setTextColor(ContextCompat.getColor(requireContext(),
-                if (currentArchiveState == 1) R.color.greendarkerbutton else R.color.black))
-            ((background as LayerDrawable).getDrawable(1) as GradientDrawable).setStroke(
-                4,
-                ContextCompat.getColor(requireContext(),
-                    if (currentArchiveState == 1) R.color.greendarkerbutton else R.color.white)
+        binding.layoutItemTerupload.apply {
+            val isActive = currentArchiveState == 1
+
+            // Update text color for `listItemTerupload`
+            binding.listItemTerupload.setTextColor(
+                ContextCompat.getColor(
+                    requireContext(),
+                    if (isActive) R.color.greendarkerbutton else R.color.black
+                )
+            )
+
+            // Update stroke color for the background
+            val layerDrawable = background as LayerDrawable
+            val strokeDrawable = layerDrawable.getDrawable(1) as GradientDrawable
+            strokeDrawable.setStroke(
+                4, // Stroke width in dp
+                ContextCompat.getColor(
+                    requireContext(),
+                    if (isActive) R.color.greendarkerbutton else R.color.white
+                )
+            )
+
+            // Update the background color for `counterItemTerupload`
+            binding.counterItemTerupload.background = ContextCompat.getDrawable(
+                requireContext(),
+                R.drawable.rounded_box_small_border
+            )
+            val counterBackground = binding.counterItemTerupload.background as GradientDrawable
+            counterBackground.setColor(
+                ContextCompat.getColor(
+                    requireContext(),
+                    if (isActive) R.color.greendarkerbutton else R.color.black
+                )
             )
         }
     }
+
+
 
     private fun adjustBottomMargin() {
         // Get reference to the bottom navigation
@@ -171,7 +346,8 @@ class DashboardFragment : Fragment() {
 
     private fun observeData() {
         loadingDialog.show()
-        tphViewModel.loadDataAllTPH(currentArchiveState)
+
+        tphViewModel.loadDataAllTPH(currentArchiveState) // State 0
         tphViewModel.dataTPHAll.observe(viewLifecycleOwner) { data ->
             if (data != null) {
                 dataTPHList.clear()
@@ -195,6 +371,17 @@ class DashboardFragment : Fragment() {
 
                 // Update RecyclerView with new data
                 tphAdapter.updateData(dataTPHList)
+
+                tphViewModel.countDataArchive()
+                tphViewModel.countDataNonArchive()
+                tphViewModel.resultCountDataArchive.observe(viewLifecycleOwner) { count ->
+                    binding.counterItemTerupload.text = count.toString()
+                }
+
+                tphViewModel.resultCountDataNonArchive.observe(viewLifecycleOwner) { count ->
+                    binding.counterItemTersimpan.text = count.toString()
+                }
+
 
                 Handler(Looper.getMainLooper()).postDelayed({
                     loadingDialog.dismiss()

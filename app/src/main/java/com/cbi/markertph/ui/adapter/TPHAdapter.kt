@@ -16,9 +16,9 @@ import java.util.Locale
 
 class TPHAdapter : RecyclerView.Adapter<TPHAdapter.TPHViewHolder>() {
     private var tphList = mutableListOf<Map<String, Any>>()
-
+    private val selectedItems = mutableSetOf<Int>()  // Track selected positions
     class TPHViewHolder(private val binding: TableItemRowBinding) : RecyclerView.ViewHolder(binding.root) {
-        fun bind(data: Map<String, Any>) {
+        fun bind(data: Map<String, Any>, isSelected: Boolean, onCheckedChange: (Boolean) -> Unit) {
             // Format date to Indonesia style
             val dateStr = data[KEY_TANGGAL] as String
             val formatter = SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.getDefault())
@@ -33,7 +33,18 @@ class TPHAdapter : RecyclerView.Adapter<TPHAdapter.TPHViewHolder>() {
             // Concatenate latitude and longitude
             val location = "${data[KEY_LAT]}\n${data[KEY_LON]}"
             binding.tvItemLatLon.text = location
+
+            binding.checkBoxPanen.isChecked = isSelected
+            binding.checkBoxPanen.setOnCheckedChangeListener { _, isChecked ->
+                onCheckedChange(isChecked)
+            }
         }
+    }
+
+
+    // Add methods to handle selections
+    fun getSelectedItems(): List<Map<String, Any>> {
+        return selectedItems.mapNotNull { position -> tphList.getOrNull(position) }
     }
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): TPHViewHolder {
@@ -45,15 +56,36 @@ class TPHAdapter : RecyclerView.Adapter<TPHAdapter.TPHViewHolder>() {
         return TPHViewHolder(binding)
     }
 
-    override fun onBindViewHolder(holder: TPHViewHolder, position: Int) {
-        holder.bind(tphList[position])
+    fun clearSelections() {
+        selectedItems.clear()
+        notifyDataSetChanged()
     }
 
+    override fun onBindViewHolder(holder: TPHViewHolder, position: Int) {
+        holder.bind(tphList[position], selectedItems.contains(position)) { isChecked ->
+            if (isChecked) {
+                selectedItems.add(position)
+            } else {
+                selectedItems.remove(position)
+            }
+            notifySelectedItemsChanged()
+        }
+    }
     override fun getItemCount() = tphList.size
 
     fun updateData(newData: List<Map<String, Any>>) {
         tphList.clear()
         tphList.addAll(newData)
         notifyDataSetChanged()
+    }
+
+    private var onSelectionChangedListener: ((Int) -> Unit)? = null
+
+    fun setOnSelectionChangedListener(listener: (Int) -> Unit) {
+        onSelectionChangedListener = listener
+    }
+
+    private fun notifySelectedItemsChanged() {
+        onSelectionChangedListener?.invoke(selectedItems.size)
     }
 }

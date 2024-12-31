@@ -1,6 +1,9 @@
 package com.cbi.markertph.utils
 
 import android.content.Context
+import android.os.Build
+import android.os.VibrationEffect
+import android.os.Vibrator
 import android.widget.TextView
 
 object AppUtils {
@@ -17,4 +20,16 @@ object AppUtils {
      * @return The app version as a string.
      */
 
+
+
+    fun Context.vibrate() {
+        val vibrator = getSystemService(Context.VIBRATOR_SERVICE) as Vibrator
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            vibrator.vibrate(VibrationEffect.createOneShot(100, VibrationEffect.DEFAULT_AMPLITUDE))
+        } else {
+            @Suppress("DEPRECATION")
+            vibrator.vibrate(100)
+        }
+    }
 }
