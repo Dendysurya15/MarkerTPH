@@ -1,5 +1,7 @@
 package com.cbi.markertph.ui.adapter
 
+import android.os.Handler
+import android.os.Looper
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -19,6 +21,10 @@ class TPHAdapter : RecyclerView.Adapter<TPHAdapter.TPHViewHolder>() {
     private var tphList = mutableListOf<Map<String, Any>>()
     private var currentArchiveState: Int = 0
     private val selectedItems = mutableSetOf<Int>()  // Track selected positions
+    private var selectAllState = false
+
+    private var onSelectionChangeListener: ((Int) -> Unit)? = null
+
     class TPHViewHolder(private val binding: TableItemRowBinding) : RecyclerView.ViewHolder(binding.root) {
         fun bind(data: Map<String, Any>, isSelected: Boolean,archiveState: Int, onCheckedChange: (Boolean) -> Unit) {
             // Format date to Indonesia style
@@ -49,8 +55,7 @@ class TPHAdapter : RecyclerView.Adapter<TPHAdapter.TPHViewHolder>() {
         }
     }
     fun isAllSelected(): Boolean {
-        val selectableItems = tphList.count { currentArchiveState != 1 }
-        return selectedItems.size == selectableItems && selectableItems > 0
+        return selectAllState
     }
 
     // Add methods to handle selections
@@ -67,15 +72,21 @@ class TPHAdapter : RecyclerView.Adapter<TPHAdapter.TPHViewHolder>() {
         return TPHViewHolder(binding)
     }
 
-    fun selectAll() {
+
+    fun selectAll(select: Boolean) {
+        selectAllState = select
         selectedItems.clear()
-        for (i in tphList.indices) {
-            if (currentArchiveState != 1) {  // Only select non-archived items
-                selectedItems.add(i)
+        if (select) {
+            for (i in tphList.indices) {
+                if (currentArchiveState != 1) {
+                    selectedItems.add(i)
+                }
             }
         }
-        notifyDataSetChanged()
-        notifySelectedItemsChanged()
+        Handler(Looper.getMainLooper()).post {
+            notifyDataSetChanged()
+            onSelectionChangeListener?.invoke(selectedItems.size)
+        }
     }
 
     fun clearSelections() {
@@ -89,8 +100,10 @@ class TPHAdapter : RecyclerView.Adapter<TPHAdapter.TPHViewHolder>() {
                 selectedItems.add(position)
             } else {
                 selectedItems.remove(position)
+                selectAllState = false
             }
-            notifySelectedItemsChanged()
+//            notifySelectedItemsChanged()
+            onSelectionChangeListener?.invoke(selectedItems.size)
         }
     }
 
@@ -101,19 +114,38 @@ class TPHAdapter : RecyclerView.Adapter<TPHAdapter.TPHViewHolder>() {
 
     override fun getItemCount() = tphList.size
 
-    fun updateData(newData: List<Map<String, Any>>) {
-        tphList.clear()
-        tphList.addAll(newData)
-        notifyDataSetChanged()
-    }
+//    fun updateData(newData: List<Map<String, Any>>) {
+//        tphList.clear()
+//        tphList.addAll(newData)
+//        notifyDataSetChanged()
+//    }
 
     private var onSelectionChangedListener: ((Int) -> Unit)? = null
 
     fun setOnSelectionChangedListener(listener: (Int) -> Unit) {
-        onSelectionChangedListener = listener
+        onSelectionChangeListener = listener
     }
 
     private fun notifySelectedItemsChanged() {
         onSelectionChangedListener?.invoke(selectedItems.size)
     }
+
+    fun clearAll() {
+        selectedItems.clear()
+        tphList.clear()
+        selectAllState = false
+        notifyDataSetChanged()
+        onSelectionChangeListener?.invoke(0)
+    }
+
+    // Make sure updateData also resets selection state
+    fun updateData(newData: List<Map<String, Any>>) {
+        tphList.clear()
+        selectedItems.clear()
+        selectAllState = false
+        tphList.addAll(newData)
+        notifyDataSetChanged()
+        onSelectionChangeListener?.invoke(0)
+    }
+
 }

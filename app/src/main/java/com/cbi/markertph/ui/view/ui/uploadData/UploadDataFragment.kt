@@ -52,7 +52,7 @@ class UploadDataFragment : Fragment() {
     private lateinit var tphAdapter: TPHAdapter
 
     private var currentArchiveState = 0 // 0 for Tersimpan, 1 for Terupload
-
+    private var isSettingUpCheckbox = false
     override fun onCreateView(
         inflater: LayoutInflater,
         container: ViewGroup?,
@@ -118,10 +118,32 @@ class UploadDataFragment : Fragment() {
         adjustBottomMargin()
         setupSpeedDial()
         loadingDialog = LoadingDialog(requireContext())
-
+        setupCheckboxControl()
         observeData()
 
+
+
         return root
+    }
+
+
+    private fun setupCheckboxControl() {
+        binding.tableHeader.headerCheckBoxPanen.apply {
+            visibility = View.VISIBLE
+            setOnCheckedChangeListener(null) // Remove any existing listeners
+            setOnCheckedChangeListener { _, isChecked ->
+                if (!isSettingUpCheckbox) {
+                    tphAdapter.selectAll(isChecked)
+                }
+            }
+        }
+
+        tphAdapter.setOnSelectionChangedListener { selectedCount ->
+            isSettingUpCheckbox = true
+            binding.tableHeader.headerCheckBoxPanen.isChecked = tphAdapter.isAllSelected()
+            binding.dialTphList.visibility = if (selectedCount > 0) View.VISIBLE else View.GONE
+            isSettingUpCheckbox = false
+        }
     }
 
     private fun setAppVersion() {
@@ -161,7 +183,7 @@ class UploadDataFragment : Fragment() {
                     result.isSuccess -> {
                         // Handle successful upload
                         val responses = result.getOrNull()
-                        Log.d("testing", "Uploaded successfully: $responses")
+
 
                         // Refresh data after successful upload
                         tphViewModel.loadDataAllTPH(currentArchiveState)
@@ -170,7 +192,13 @@ class UploadDataFragment : Fragment() {
 
                         // Show success message
                         Toast.makeText(context, "Data berhasil diupload!", Toast.LENGTH_SHORT).show()
-
+                        AlertDialogUtility.alertDialogAction(
+                            requireContext(),
+                            "Sukses Upload",
+                            "Data sudah berhasil di-upload!",
+                            "success.json"
+                        ) {
+                        }
                         loadingDialog.dismiss()
                     }
                     result.isFailure -> {
@@ -209,7 +237,7 @@ class UploadDataFragment : Fragment() {
                 } else {
                     Toast.makeText(context, "Gagal menghapus data", Toast.LENGTH_SHORT).show()
                 }
-
+                binding.tableHeader.headerCheckBoxPanen.isChecked = false
                 tphAdapter.clearSelections()
             }
 
@@ -395,12 +423,22 @@ class UploadDataFragment : Fragment() {
         }
     }
 
+//    private fun setupRecyclerView() {
+//        tphAdapter = TPHAdapter()
+//        binding.rvTableData.apply {
+//            layoutManager = LinearLayoutManager(context)
+//            adapter = tphAdapter
+//            setHasFixedSize(true)
+//        }
+//    }
+
     private fun setupRecyclerView() {
         tphAdapter = TPHAdapter()
         binding.rvTableData.apply {
             layoutManager = LinearLayoutManager(context)
             adapter = tphAdapter
             setHasFixedSize(true)
+            itemAnimator = null // Disable animations to prevent glitches
         }
     }
 
@@ -502,6 +540,8 @@ class UploadDataFragment : Fragment() {
     }
 
     override fun onDestroyView() {
+        tphAdapter.clearAll() // We'll create this method
+        binding.tableHeader.headerCheckBoxPanen.setOnCheckedChangeListener(null)
         super.onDestroyView()
         _binding = null
     }

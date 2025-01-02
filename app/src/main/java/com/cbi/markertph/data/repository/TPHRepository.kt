@@ -130,17 +130,17 @@ class TPHRepository(context: Context) {
     fun uploadDataServer(context: Context, dataList: List<UploadData>): LiveData<Result<List<UploadResponse>>> {
         val result = MutableLiveData<Result<List<UploadResponse>>>()
         val executor = Executors.newSingleThreadExecutor()
-        val startTime = System.currentTimeMillis()
         val responses = mutableListOf<UploadResponse>()
 
-        fun attemptUpload(retryCount: Int, index: Int) {
+        fun attemptUpload(index: Int) {
             val currentData = dataList[index]
             val call = apiService.uploadData(currentData)
 
             call.enqueue(object : Callback<UploadResponse> {
                 override fun onResponse(call: Call<UploadResponse>, response: Response<UploadResponse>) {
                     if (response.isSuccessful && response.body() != null) {
-                        response.body()?.let { uploadResponse ->
+                        val uploadResponse = response.body()!!
+                        if (uploadResponse.success) {
                             responses.add(uploadResponse)
                             Log.d("upload", "Item ${index + 1} uploaded successfully. Response: ${uploadResponse.message}")
 
@@ -155,52 +155,39 @@ class TPHRepository(context: Context) {
                                 result.postValue(Result.success(responses))
                                 executor.shutdown()
                             } else if (index + 1 < dataList.size) {
-                                attemptUpload(0, index + 1)
+                                attemptUpload(index + 1)
                             }
+                        } else {
+                            handleFailure(index, "Server returned failure: ${uploadResponse.message}")
                         }
                     } else {
-                        val errorBody = response.errorBody()?.string()
-                        Log.e("upload", "Error Response Code: ${response.code()}")
-                        Log.e("upload", "Error Body: $errorBody")
-                        Log.e("upload", "Headers: ${response.headers()}")
-                        retryIfNeeded(retryCount, index, "Error uploading data: $errorBody")
+                        handleFailure(index, "Error uploading data: ${response.errorBody()?.string()}")
                     }
                 }
 
                 override fun onFailure(call: Call<UploadResponse>, t: Throwable) {
-                    Log.e("upload", "Network failure: ${t.message}")
-                    Log.e("upload", "Stack trace: ", t)
-                    retryIfNeeded(retryCount, index, "Error: ${t.message}")
+                    handleFailure(index, "Network failure: ${t.message}")
                 }
 
-                private fun retryIfNeeded(retryCount: Int, index: Int, errorMessage: String) {
-                    val currentTime = System.currentTimeMillis()
-                    if (currentTime - startTime < TIMEOUT_MS && retryCount < 3) {
-                        Log.d("upload", "Retrying item ${index + 1}, attempt ${retryCount + 1}. Error: $errorMessage")
-                        executor.execute {
-                            Thread.sleep(RETRY_DELAY_MS)
-                            attemptUpload(retryCount + 1, index)
-                        }
-                    } else {
-                        Log.e("upload", "Upload failed for item ${index + 1} after $retryCount retries. $errorMessage")
+                private fun handleFailure(index: Int, errorMessage: String) {
+                    Log.e("upload", errorMessage)
 
-                        AlertDialogUtility.withSingleAction(
-                            context,
-                            "Kembali",
-                            "Terjadi Kesalahan Upload!",
-                            "Periksa kembali data yang di-upload! Error: $errorMessage",
-                            "warning.json",
-                            R.color.colorRedDark
-                        ) {}
+                    AlertDialogUtility.withSingleAction(
+                        context,
+                        "Kembali",
+                        "Terjadi Kesalahan Upload!",
+                        "Periksa kembali data yang di-upload! Error: $errorMessage",
+                        "warning.json",
+                        R.color.colorRedDark
+                    ) {}
 
-                        result.postValue(Result.failure(Exception(errorMessage)))
-                        executor.shutdown()
-                    }
+                    result.postValue(Result.failure(Exception(errorMessage)))
+                    executor.shutdown()
                 }
             })
         }
 
-        executor.execute { attemptUpload(0, 0) }
+        executor.execute { attemptUpload(0) }
         return result
     }
 

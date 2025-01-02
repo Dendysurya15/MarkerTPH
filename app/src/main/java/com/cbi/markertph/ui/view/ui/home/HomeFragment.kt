@@ -101,7 +101,7 @@ class HomeFragment : Fragment() {
                         if (isInserted){
                             AlertDialogUtility.alertDialogAction(
                                 requireContext(),
-                                "Sukses",
+                                "Sukses Simpan",
                                 "Data berhasil disimpan!",
                                 "success.json"
                                 ) {

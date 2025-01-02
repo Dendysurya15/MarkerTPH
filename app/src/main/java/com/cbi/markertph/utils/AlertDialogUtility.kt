@@ -140,7 +140,7 @@ class AlertDialogUtility {
                         ContextCompat.getColor(context, R.color.greendarkerbutton)
                     )
                     mbSuccessDialog.backgroundTintList = defaultColorStateList
-                    mbSuccessDialog.rippleColor = defaultColorStateList
+                    mbSuccessDialog.rippleColor = ColorStateList.valueOf(Color.argb(70, 255, 255, 255))
                 }
 
                 mbSuccessDialog.setOnClickListener {
