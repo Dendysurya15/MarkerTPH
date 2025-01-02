@@ -44,58 +44,57 @@ class HomeActivity : AppCompatActivity() {
         setupLayout()
 
 
-        val mbSaveDataTPH = findViewById<MaterialButton>(R.id.mbSaveDataTPH)
-        mbSaveDataTPH.setOnClickListener{
-
-            AlertDialogUtility.withTwoActions(
-                this,
-                "Simpan",
-                getString(R.string.confirmation_dialog_title),
-                getString(R.string.confirmation_dialog_description)
-            ) {
-
-                tphViewModel.insertPanenTBSVM(
-
-                    tanggal = "2024-04-24 20:00:00",
-                    estate = "Estate 1",
-                    id_estate = 101,
-                    afdeling = "Afdeling A",
-                    id_afdeling = 202,
-                    blok = "Blok X",
-                    id_blok = 303,
-                    tph = "TPH-1",
-                    id_tph = 606,
-                    latitude = "1.234567",
-                    longitude = "103.456789"
-                )
-
-                tphViewModel.insertDBTPH.observe(this) { isInserted ->
-                    if (isInserted){
-                        AlertDialogUtility.alertDialogAction(
-                            this,
-                            "Sukses",
-                            "Data berhasil disimpan!",
-
-                            ) {
-                            Toast.makeText(
-                                this,
-                                "sukses bro",
-                                Toast.LENGTH_LONG
-                            ).show()
-                        }
-                    }else{
-                        Toast.makeText(
-                            this,
-                            "Gagal bro",
-                            Toast.LENGTH_LONG
-                        ).show()
-                    }
-                }
-
-
-            }
-
-        }
+//        val mbSaveDataTPH = findViewById<MaterialButton>(R.id.mbSaveDataTPH)
+//        mbSaveDataTPH.setOnClickListener{
+//
+//            AlertDialogUtility.withTwoActions(
+//                this,
+//                "Simpan",
+//                getString(R.string.confirmation_dialog_title),
+//                getString(R.string.confirmation_dialog_description)
+//            ) {
+//
+//                tphViewModel.insertPanenTBSVM(
+//                    tanggal = "2024-04-24 20:00:00",
+//                    estate = "Estate 1",
+//                    id_estate = 101,
+//                    afdeling = "Afdeling A",
+//                    id_afdeling = 202,
+//                    blok = "Blok X",
+//                    id_blok = 303,
+//                    tph = "TPH-1",
+//                    id_tph = 606,
+//                    latitude = "1.234567",
+//                    longitude = "103.456789"
+//                )
+//
+//                tphViewModel.insertDBTPH.observe(this) { isInserted ->
+//                    if (isInserted){
+//                        AlertDialogUtility.alertDialogAction(
+//                            this,
+//                            "Sukses",
+//                            "Data berhasil disimpan!",
+//
+//                            ) {
+//                            Toast.makeText(
+//                                this,
+//                                "sukses bro",
+//                                Toast.LENGTH_LONG
+//                            ).show()
+//                        }
+//                    }else{
+//                        Toast.makeText(
+//                            this,
+//                            "Gagal bro",
+//                            Toast.LENGTH_LONG
+//                        ).show()
+//                    }
+//                }
+//
+//
+//            }
+//
+//        }
     }
 
     private fun setupLayout() {

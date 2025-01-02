@@ -7,7 +7,7 @@
         android:title="@string/title_home" />
     <item
         android:id="@+id/navigation_dashboard"
-        android:icon="@drawable/ic_dashboard_black_24dp"
+        android:icon="@drawable/baseline_cloud_upload_24"
         android:title="Upload Data" />
 
 </menu>

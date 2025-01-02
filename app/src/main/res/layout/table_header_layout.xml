@@ -22,13 +22,25 @@
             android:layout_weight="0.4">
 
             <CheckBox
-                android:id="@+id/checkBoxPanen"
+                android:id="@+id/headerCheckBoxPanen"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_gravity="center"
                 android:minWidth="48dp"
-
+                android:visibility="gone"
                 android:minHeight="48dp"/>
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:text="No."
+                android:gravity="center"
+                android:padding="5dp"
+                android:id="@+id/headerNoList"
+                android:visibility="gone"
+                android:textSize="13dp"
+                android:background="@drawable/outer_rounded_background_border"
+                android:textStyle="bold" />
         </FrameLayout>
 
 <!--        <TextView-->
@@ -45,10 +57,11 @@
             android:layout_width="0dp"
             android:layout_height="match_parent"
             android:layout_weight="1"
-            android:text="TANGGAL"
+            android:text="Tanggal"
             android:gravity="center_vertical"
-            android:padding="15dp"
-            android:textSize="14dp"
+            android:padding="5dp"
+            android:fontFamily="@font/inter_bold"
+            android:textSize="13dp"
             android:background="@drawable/rounded_radius_background"
             android:textStyle="bold" />
 
@@ -57,9 +70,10 @@
             android:layout_height="match_parent"
             android:layout_weight="1"
             android:gravity="center_vertical"
-            android:text="KETERANGAN TPH"
-            android:padding="15dp"
-            android:textSize="14dp"
+            android:text="Detail TPH"
+            android:padding="5dp"
+            android:fontFamily="@font/inter_bold"
+            android:textSize="13dp"
             android:background="@drawable/rounded_radius_background"
             android:textStyle="bold" />
 
@@ -67,10 +81,11 @@
             android:layout_width="0dp"
             android:layout_height="match_parent"
             android:layout_weight="1"
-            android:text="KOORDINAT GPS"
+            android:text="Koordinat GPS (Lat/Lon)"
+            android:fontFamily="@font/inter_bold"
             android:gravity="center_vertical"
-            android:padding="15dp"
-            android:textSize="14dp"
+            android:padding="5dp"
+            android:textSize="13dp"
             android:background="@drawable/outer_rounded_background_border_right"
             android:textStyle="bold" />
 

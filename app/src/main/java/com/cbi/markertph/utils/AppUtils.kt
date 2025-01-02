@@ -1,10 +1,14 @@
 package com.cbi.markertph.utils
 
 import android.content.Context
+import android.net.ConnectivityManager
+import android.net.NetworkCapabilities
 import android.os.Build
 import android.os.VibrationEffect
 import android.os.Vibrator
 import android.widget.TextView
+import android.widget.Toast
+import com.cbi.markertph.R
 
 object AppUtils {
 
@@ -21,6 +25,20 @@ object AppUtils {
      */
 
 
+    fun getAppVersion(context: Context): String {
+        return "Versi ${context.getString(R.string.app_version)}"
+    }
+
+    fun isInternetAvailable(context: Context): Boolean {
+        val connectivityManager = context.getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
+        val network = connectivityManager.activeNetwork ?: return false
+        val capabilities = connectivityManager.getNetworkCapabilities(network) ?: return false
+        return capabilities.hasCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET)
+    }
+
+    fun showNoInternetToast(context: Context) {
+        Toast.makeText(context, "No internet connection available", Toast.LENGTH_SHORT).show()
+    }
 
     fun Context.vibrate() {
         val vibrator = getSystemService(Context.VIBRATOR_SERVICE) as Vibrator

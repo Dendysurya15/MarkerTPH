@@ -5,7 +5,7 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:background="@color/blueLight"
-    tools:context=".ui.view.ui.dashboard.DashboardFragment">
+    tools:context=".ui.view.ui.uploadData.UploadDataFragment">
 
 
 
@@ -56,10 +56,11 @@
                     android:layout_width="match_parent"
                     android:layout_height="match_parent"
                     android:fontFamily="@font/inter_regular"
+                    android:id="@+id/version_app"
                     android:textSize="13dp"
                     android:gravity="top"
                     android:textStyle="italic"
-                    android:text="Versi 1.5.84"
+                    android:text=""
                     android:layout_weight="1"
                     android:lineSpacingExtra="2dp" /> <!-- Tighter line spacing -->
             </LinearLayout>

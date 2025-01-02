@@ -1,6 +1,5 @@
-package com.cbi.markertph.ui.view.ui.dashboard
+package com.cbi.markertph.ui.view.ui.uploadData
 
-import android.content.res.ColorStateList
 import android.graphics.drawable.GradientDrawable
 import android.graphics.drawable.LayerDrawable
 import android.os.Bundle
@@ -10,7 +9,6 @@ import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import android.widget.LinearLayout
 import android.widget.TextView
 import android.widget.Toast
 import androidx.constraintlayout.widget.ConstraintLayout
@@ -21,6 +19,7 @@ import androidx.recyclerview.widget.LinearLayoutManager
 import com.cbi.markertph.R
 import com.cbi.markertph.data.database.DatabaseHelper.Companion.KEY_AFDELING
 import com.cbi.markertph.data.database.DatabaseHelper.Companion.KEY_AFDELING_ID
+import com.cbi.markertph.data.database.DatabaseHelper.Companion.KEY_APP_VERSION
 import com.cbi.markertph.data.database.DatabaseHelper.Companion.KEY_BLOK
 import com.cbi.markertph.data.database.DatabaseHelper.Companion.KEY_BLOK_ID
 import com.cbi.markertph.data.database.DatabaseHelper.Companion.KEY_ESTATE
@@ -31,23 +30,21 @@ import com.cbi.markertph.data.database.DatabaseHelper.Companion.KEY_LON
 import com.cbi.markertph.data.database.DatabaseHelper.Companion.KEY_TANGGAL
 import com.cbi.markertph.data.database.DatabaseHelper.Companion.KEY_TPH
 import com.cbi.markertph.data.database.DatabaseHelper.Companion.KEY_TPH_ID
+import com.cbi.markertph.data.model.UploadData
 import com.cbi.markertph.data.repository.TPHRepository
-import com.cbi.markertph.databinding.FragmentDashboardBinding
+import com.cbi.markertph.databinding.FragmentUploadDataBinding
 import com.cbi.markertph.ui.adapter.TPHAdapter
-import com.cbi.markertph.ui.viewModel.LocationViewModel
 import com.cbi.markertph.ui.viewModel.TPHViewModel
 import com.cbi.markertph.utils.AlertDialogUtility
+import com.cbi.markertph.utils.AppUtils
 import com.cbi.markertph.utils.AppUtils.vibrate
 import com.cbi.markertph.utils.LoadingDialog
 import com.google.android.material.bottomnavigation.BottomNavigationView
 import com.leinardi.android.speeddial.SpeedDialActionItem
-import java.text.SimpleDateFormat
-import java.util.Date
-import java.util.Locale
 
-class DashboardFragment : Fragment() {
+class UploadDataFragment : Fragment() {
 
-    private var _binding: FragmentDashboardBinding? = null
+    private var _binding: FragmentUploadDataBinding? = null
     private lateinit var tphViewModel: TPHViewModel
     private val binding get() = _binding!!
     private lateinit var loadingDialog: LoadingDialog
@@ -61,11 +58,11 @@ class DashboardFragment : Fragment() {
         container: ViewGroup?,
         savedInstanceState: Bundle?
     ): View {
-        val dashboardViewModel = ViewModelProvider(this).get(DashboardViewModel::class.java)
+        val uploadDataViewModel = ViewModelProvider(this).get(UploadDataViewModel::class.java)
 
-        _binding = FragmentDashboardBinding.inflate(inflater, container, false)
+        _binding = FragmentUploadDataBinding.inflate(inflater, container, false)
         val root: View = binding.root
-
+        binding.tableHeader.headerCheckBoxPanen.visibility = View.VISIBLE
         binding.layoutItemTersimpan.apply {
             // Change the stroke color of the LayerDrawable
             val layerDrawable = binding.layoutItemTersimpan.background as LayerDrawable
@@ -114,7 +111,7 @@ class DashboardFragment : Fragment() {
                 ContextCompat.getColor(requireContext(), R.color.black)
             )
         }
-
+        setAppVersion()
         initViewModel()
         setupRecyclerView()
         setupMenuListeners()
@@ -127,14 +124,67 @@ class DashboardFragment : Fragment() {
         return root
     }
 
+    private fun setAppVersion() {
+        val versionTextView: TextView = binding.versionApp
+        val appVersion = AppUtils.getAppVersion(requireContext()) // Use AppUtils here
+        versionTextView.text = "$appVersion"
+    }
+
     private fun handleUpload(selectedItems: List<Map<String, Any>>) {
         AlertDialogUtility.withTwoActions(
             requireContext(),
             "Submit",
             getString(R.string.confirmation_dialog_title),
-            "Apakah anda yakin untuk mengupload ${selectedItems.size} data?"
+            "Apakah anda yakin untuk mengupload ${selectedItems.size} data?",
+            "warning.json"
         ) {
-            Toast.makeText(context, "${selectedItems.size} items selected for upload", Toast.LENGTH_SHORT).show()
+
+            loadingDialog.show()
+
+            val uploadDataList = selectedItems.map {
+                UploadData(
+                    id = it["id"] as Int,
+                    datetime = it["tanggal"] as String,
+                    estate = it["estate"] as String,
+                    afdeling = it["afdeling"] as String,
+                    blok = it["blok"] as String,
+                    tph = it["tph"] as String,
+                    lat = it["latitude"] as String,
+                    lon = it["longitude"] as String,
+                    app_version = it["app_version"] as String
+                )
+            }
+
+
+            tphViewModel.uploadData(requireContext(), uploadDataList).observe(requireActivity()) { result ->
+                when {
+                    result.isSuccess -> {
+                        // Handle successful upload
+                        val responses = result.getOrNull()
+                        Log.d("testing", "Uploaded successfully: $responses")
+
+                        // Refresh data after successful upload
+                        tphViewModel.loadDataAllTPH(currentArchiveState)
+                        tphViewModel.countDataArchive()
+                        tphViewModel.countDataNonArchive()
+
+                        // Show success message
+                        Toast.makeText(context, "Data berhasil diupload!", Toast.LENGTH_SHORT).show()
+
+                        loadingDialog.dismiss()
+                    }
+                    result.isFailure -> {
+                        // Handle failure
+                        val error = result.exceptionOrNull()
+                        Log.e("testing", "Failed to upload: ${error?.message}")
+
+                        // Show error message
+                        Toast.makeText(context, "Gagal mengupload data: ${error?.message}", Toast.LENGTH_SHORT).show()
+
+                        loadingDialog.dismiss()
+                    }
+                }
+            }
             tphAdapter.clearSelections()
 
         }
@@ -147,6 +197,7 @@ class DashboardFragment : Fragment() {
             "Hapus",
             getString(R.string.confirmation_dialog_title),
             "Apakah anda yakin untuk menghapus ${selectedItems.size} data?",
+            "warning.json",
             ContextCompat.getColor(requireContext(), R.color.colorRedDark)
         ) {
 
@@ -169,6 +220,14 @@ class DashboardFragment : Fragment() {
 
 
         binding.dialTphList.apply {
+
+            addActionItem(
+                SpeedDialActionItem.Builder(R.id.cancelSelection, R.drawable.baseline_check_box_outline_blank_24)  // Use appropriate icon
+                    .setLabel("Batalkan Pilihan")
+                    .setFabBackgroundColor(ContextCompat.getColor(requireContext(), R.color.colorRedDark))  // Use appropriate color
+                    .create()
+            )
+
             addActionItem(
                 SpeedDialActionItem.Builder(R.id.uploadSelected, R.drawable.baseline_cloud_upload_24)
                     .setLabel("Upload Item Terpilih")
@@ -183,11 +242,15 @@ class DashboardFragment : Fragment() {
                     .create()
             )
 
-            visibility = View.GONE // Hide initially
+            visibility = View.GONE
 
             setOnActionSelectedListener { actionItem ->
                 when (actionItem.id) {
 
+                    R.id.cancelSelection -> {
+                        tphAdapter.clearSelections()
+                        true
+                    }
                     R.id.deleteSelected -> {
                         val selectedItems = tphAdapter.getSelectedItems()
                         handleDelete(selectedItems)
@@ -195,7 +258,23 @@ class DashboardFragment : Fragment() {
                     }
                     R.id.uploadSelected -> {
                         val selectedItems = tphAdapter.getSelectedItems()
-                        handleUpload(selectedItems)
+
+                        if (AppUtils.isInternetAvailable(requireContext())) {
+                            handleUpload(selectedItems)
+                        } else {
+                            Log.d("testing", "internet tidak adaaaa")
+                            AlertDialogUtility.withSingleAction(
+                                requireContext(),
+                                "Kembali",
+                                "Tidak Ada Internet!",
+                                "Internet tidak tersedia. Mohon sambungkan perangkat Anda ke jaringan internet!",
+                                "network_error.json",
+                                R.color.colorRedDark
+                            ) {
+                                // Optional: Scroll to first error or highlight fields
+                            }
+                        }
+
                         true
                     }
                     else -> false
@@ -205,9 +284,13 @@ class DashboardFragment : Fragment() {
 
         // Setup selection listener
         tphAdapter.setOnSelectionChangedListener { selectedCount ->
-            binding.dialTphList.visibility = if (selectedCount > 0) View.VISIBLE else View.GONE
-
+            binding.dialTphList.visibility = if (selectedCount > 0 && currentArchiveState == 0)
+                View.VISIBLE
+            else
+                View.GONE
         }
+
+
 
 
     }
@@ -217,7 +300,10 @@ class DashboardFragment : Fragment() {
         binding.layoutItemTersimpan.apply {
             val isActive = currentArchiveState == 0
 
-            // Update text color for `listItemTersimpan`
+            // If switching from Terupload to Tersimpan, uncheck all items
+            if (isActive) {
+                tphAdapter.clearSelections() // Add this method to your adapter
+            }
             binding.listItemTersimpan.setTextColor(
                 ContextCompat.getColor(
                     requireContext(),
@@ -283,6 +369,10 @@ class DashboardFragment : Fragment() {
                 )
             )
         }
+
+
+        binding.dialTphList.visibility = if (currentArchiveState == 1) View.GONE else binding.dialTphList.visibility
+
     }
 
 
@@ -321,7 +411,11 @@ class DashboardFragment : Fragment() {
                 updateMenuState()
 
 
-                // Clear existing data while loading
+                binding.tableHeader.headerCheckBoxPanen.visibility = View.VISIBLE
+                binding.tableHeader.headerNoList.visibility = View.GONE
+
+                tphAdapter.updateArchiveState(0)
+
                 dataTPHList.clear()
                 tphAdapter.updateData(dataTPHList)
 
@@ -333,8 +427,9 @@ class DashboardFragment : Fragment() {
             if (currentArchiveState != 1) {
                 currentArchiveState = 1
                 updateMenuState()
-
-                // Clear existing data while loading
+                binding.tableHeader.headerNoList.visibility = View.VISIBLE
+                binding.tableHeader.headerCheckBoxPanen.visibility = View.GONE
+                tphAdapter.updateArchiveState(1)
                 dataTPHList.clear()
                 tphAdapter.updateData(dataTPHList)
 
@@ -366,6 +461,7 @@ class DashboardFragment : Fragment() {
                     recordMap[KEY_TPH_ID] = record.id_tph
                     recordMap[KEY_LAT] = record.latitude
                     recordMap[KEY_LON] = record.longitude
+                    recordMap[KEY_APP_VERSION] = record.app_version
                     dataTPHList.add(recordMap)
                 }
 

@@ -58,7 +58,8 @@
                     android:textSize="13dp"
                     android:gravity="top"
                     android:textStyle="italic"
-                    android:text="Versi 1.5.84"
+                    android:id="@+id/version_app"
+                    android:text=""
                     android:layout_weight="1"
                     android:lineSpacingExtra="2dp" /> <!-- Tighter line spacing -->
             </LinearLayout>

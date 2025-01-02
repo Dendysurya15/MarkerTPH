@@ -8,7 +8,7 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:orientation="horizontal"
-
+        android:paddingVertical="10dp"
         android:layout_marginHorizontal="10dp"
         android:background="@drawable/rounded_background_border_white"
         tools:ignore="MissingConstraints">
@@ -34,7 +34,7 @@
             android:gravity="center_vertical"
             android:id="@+id/tvItemTgl"
             android:text=""
-            android:padding="15dp"
+            android:padding="5dp"
             android:textStyle="bold" />
 
 
@@ -46,7 +46,7 @@
             android:layout_height="wrap_content"
             android:gravity="center_vertical"
             android:text="NBE (OA) \n A03 - TPH 24"
-            android:padding="15dp"
+            android:padding="5dp"
             android:textStyle="bold" />
 
 
@@ -58,7 +58,7 @@
             android:layout_weight="1"
             android:id="@+id/tvItemLatLon"
             android:text="-23433 \n 111.343"
-            android:padding="15dp"
+            android:padding="5dp"
             android:gravity="center_vertical"
             android:textStyle="bold" />
 

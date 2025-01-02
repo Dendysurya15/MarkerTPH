@@ -24,6 +24,7 @@ import com.cbi.markertph.databinding.PertanyaanSpinnerLayoutBinding
 import com.cbi.markertph.ui.viewModel.LocationViewModel
 import com.cbi.markertph.ui.viewModel.TPHViewModel
 import com.cbi.markertph.utils.AlertDialogUtility
+import com.cbi.markertph.utils.AppUtils
 import com.cbi.markertph.utils.AppUtils.vibrate
 import com.google.android.material.button.MaterialButton
 import com.google.android.material.snackbar.Snackbar
@@ -64,7 +65,7 @@ class HomeFragment : Fragment() {
         _binding = FragmentHomeBinding.inflate(inflater, container, false)
         initViewModel()
         setupLayout()
-
+        setAppVersion()
         val mbSaveDataTPH = binding.mbSaveDataTPH
         mbSaveDataTPH.setOnClickListener{
 
@@ -74,9 +75,11 @@ class HomeFragment : Fragment() {
                     requireContext(),
                     "Simpan",
                     getString(R.string.confirmation_dialog_title),
-                    getString(R.string.confirmation_dialog_description)
+                    getString(R.string.confirmation_dialog_description),
+                    "warning.json"
                 ) {
 
+                    val app_version = requireContext().getString(R.string.app_version)
                     tphViewModel.insertPanenTBSVM(
                         tanggal = SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.getDefault()).format(
                             Date()
@@ -90,7 +93,8 @@ class HomeFragment : Fragment() {
                         tph = selectedTPH,
                         id_tph = 4,
                         latitude = lat.toString(),
-                        longitude = lon.toString()
+                        longitude = lon.toString(),
+                        app_version = app_version
                     )
 
                     tphViewModel.insertDBTPH.observe(requireActivity()) { isInserted ->
@@ -99,9 +103,8 @@ class HomeFragment : Fragment() {
                                 requireContext(),
                                 "Sukses",
                                 "Data berhasil disimpan!",
-
+                                "success.json"
                                 ) {
-
                             }
                         }else{
                             Toast.makeText(
@@ -142,6 +145,11 @@ class HomeFragment : Fragment() {
         )[LocationViewModel::class.java]
     }
 
+    private fun setAppVersion() {
+        val versionTextView: TextView = binding.versionApp
+        val appVersion = AppUtils.getAppVersion(requireContext()) // Use AppUtils here
+        versionTextView.text = "$appVersion"
+    }
 
     private fun setupLayout() {
         val spinnerMappings = listOf(
@@ -187,6 +195,7 @@ class HomeFragment : Fragment() {
         var isValid = true
         val missingFields = mutableListOf<String>()
 
+        // Check each field and update UI immediately
         if (selectedEstate.isEmpty()) {
             binding.layoutEstate.tvError.visibility = View.VISIBLE
             missingFields.add("Estate")
@@ -216,19 +225,20 @@ class HomeFragment : Fragment() {
         if (!isValid) {
             requireContext().vibrate()
             // Create a user-friendly error message
-            val errorMessage = buildString {
-                append("Mohon lengkapi data berikut:\n\n")
-                missingFields.forEachIndexed { index, field ->
-                    append("${index + 1}. $field")
-                    if (index < missingFields.size - 1) append("\n")
-                }
-            }
+//            val errorMessage = buildString {
+//                append("Mohon lengkapi data berikut:\n\n")
+//                missingFields.forEachIndexed { index, field ->
+//                    append("${index + 1}. $field")
+//                    if (index < missingFields.size - 1) append("\n")
+//                }
+//            }
 
             AlertDialogUtility.withSingleAction(
                 requireContext(),
                 "Kembali",
                 "Data Belum Lengkap!",
-                errorMessage,
+                "Mohon Lengkapi Data yang belum diisi!",
+                "warning.json",
                 R.color.colorRedDark
             ) {
                 // Optional: Scroll to first error or highlight fields

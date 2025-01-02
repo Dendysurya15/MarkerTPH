@@ -1,6 +1,7 @@
 package com.cbi.markertph.ui.viewModel
 
 import android.app.Application
+import android.content.Context
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
@@ -9,6 +10,8 @@ import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import com.cbi.markertph.data.database.DatabaseHelper.Companion.KEY_ID
 import com.cbi.markertph.data.model.TPHModel
+import com.cbi.markertph.data.model.UploadData
+import com.cbi.markertph.data.model.UploadResponse
 import com.cbi.markertph.data.repository.TPHRepository
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -34,6 +37,10 @@ class TPHViewModel(application: Application, private val repository: TPHReposito
     val resultCountDataNonArchive: LiveData<Int> = _resultCountDataNonArchive
 
 
+    fun uploadData(context: Context , dataList: List<UploadData>): LiveData<Result<List<UploadResponse>>> {
+        return repository.uploadDataServer(context , dataList)
+    }
+
     fun insertPanenTBSVM(
         id: Int? = 0,
         tanggal: String,
@@ -47,7 +54,7 @@ class TPHViewModel(application: Application, private val repository: TPHReposito
         id_tph: Int,
         latitude: String,
         longitude: String,
-
+        app_version:String
     ) {
         viewModelScope.launch {
             try {
@@ -65,7 +72,8 @@ class TPHViewModel(application: Application, private val repository: TPHReposito
                     id_tph,
                     latitude,
                     longitude,
-                    0
+                    0,
+                    app_version
                 )
 
                 // Insert data into the repository

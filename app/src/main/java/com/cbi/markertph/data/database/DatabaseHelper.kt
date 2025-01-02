@@ -25,6 +25,7 @@ class DatabaseHelper(context: Context):
         val KEY_TPH_ID = "id_tph"
         val KEY_LAT = "latitude"
         val KEY_LON = "longitude"
+        val KEY_APP_VERSION = "app_version"
 
 
     }
@@ -43,8 +44,8 @@ class DatabaseHelper(context: Context):
            $KEY_TPH_ID INTEGER,
             $KEY_LAT VARCHAR,
             $KEY_LON VARCHAR,
-            $DB_ARCHIVE INTEGER
-        
+            $DB_ARCHIVE INTEGER,
+            $KEY_APP_VERSION VARCHAR
         )
         """.trimIndent()
 

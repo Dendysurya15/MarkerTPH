@@ -16,5 +16,6 @@ data class TPHModel(
     val id_tph: Int,
     val latitude: String,
     val longitude: String,
-    val archive:Int
+    val archive:Int,
+    val app_version:String,
 )

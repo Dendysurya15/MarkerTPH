@@ -1,6 +1,7 @@
 package com.cbi.markertph.ui.adapter
 
 import android.view.LayoutInflater
+import android.view.View
 import android.view.ViewGroup
 import androidx.recyclerview.widget.RecyclerView
 import com.cbi.markertph.data.database.DatabaseHelper.Companion.KEY_AFDELING
@@ -16,9 +17,10 @@ import java.util.Locale
 
 class TPHAdapter : RecyclerView.Adapter<TPHAdapter.TPHViewHolder>() {
     private var tphList = mutableListOf<Map<String, Any>>()
+    private var currentArchiveState: Int = 0
     private val selectedItems = mutableSetOf<Int>()  // Track selected positions
     class TPHViewHolder(private val binding: TableItemRowBinding) : RecyclerView.ViewHolder(binding.root) {
-        fun bind(data: Map<String, Any>, isSelected: Boolean, onCheckedChange: (Boolean) -> Unit) {
+        fun bind(data: Map<String, Any>, isSelected: Boolean,archiveState: Int, onCheckedChange: (Boolean) -> Unit) {
             // Format date to Indonesia style
             val dateStr = data[KEY_TANGGAL] as String
             val formatter = SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.getDefault())
@@ -34,13 +36,22 @@ class TPHAdapter : RecyclerView.Adapter<TPHAdapter.TPHViewHolder>() {
             val location = "${data[KEY_LAT]}\n${data[KEY_LON]}"
             binding.tvItemLatLon.text = location
 
-            binding.checkBoxPanen.isChecked = isSelected
-            binding.checkBoxPanen.setOnCheckedChangeListener { _, isChecked ->
-                onCheckedChange(isChecked)
+            if (archiveState == 1) {
+                binding.checkBoxPanen.visibility = View.GONE
+
+            } else {
+                binding.checkBoxPanen.visibility = View.VISIBLE
+                binding.checkBoxPanen.isChecked = isSelected
+                binding.checkBoxPanen.setOnCheckedChangeListener { _, isChecked ->
+                    onCheckedChange(isChecked)
+                }
             }
         }
     }
-
+    fun isAllSelected(): Boolean {
+        val selectableItems = tphList.count { currentArchiveState != 1 }
+        return selectedItems.size == selectableItems && selectableItems > 0
+    }
 
     // Add methods to handle selections
     fun getSelectedItems(): List<Map<String, Any>> {
@@ -56,13 +67,24 @@ class TPHAdapter : RecyclerView.Adapter<TPHAdapter.TPHViewHolder>() {
         return TPHViewHolder(binding)
     }
 
+    fun selectAll() {
+        selectedItems.clear()
+        for (i in tphList.indices) {
+            if (currentArchiveState != 1) {  // Only select non-archived items
+                selectedItems.add(i)
+            }
+        }
+        notifyDataSetChanged()
+        notifySelectedItemsChanged()
+    }
+
     fun clearSelections() {
         selectedItems.clear()
         notifyDataSetChanged()
     }
 
     override fun onBindViewHolder(holder: TPHViewHolder, position: Int) {
-        holder.bind(tphList[position], selectedItems.contains(position)) { isChecked ->
+        holder.bind(tphList[position], selectedItems.contains(position), currentArchiveState) { isChecked ->
             if (isChecked) {
                 selectedItems.add(position)
             } else {
@@ -71,6 +93,12 @@ class TPHAdapter : RecyclerView.Adapter<TPHAdapter.TPHViewHolder>() {
             notifySelectedItemsChanged()
         }
     }
+
+    fun updateArchiveState(state: Int) {
+        currentArchiveState = state
+        notifyDataSetChanged()
+    }
+
     override fun getItemCount() = tphList.size
 
     fun updateData(newData: List<Map<String, Any>>) {
