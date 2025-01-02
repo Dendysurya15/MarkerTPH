@@ -13,3 +13,8 @@ data class UploadData(
     @SerializedName("lon") val lon: String,      // Changed from longitude
     @SerializedName("app_version") val app_version: String
 )
+
+// This is the new class for the batch request
+data class BatchUploadRequest(
+    @SerializedName("data") val data: String // Base64 encoded GZIP data
+)

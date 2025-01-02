@@ -62,7 +62,7 @@ class AlertDialogUtility {
         }
 
         @SuppressLint("InflateParams")
-        fun alertDialogAction(context: Context, titleText: String, alertText: String, animAsset: String, function: () -> Unit) {
+        fun alertDialogAction(context: Context, titleText: String, alertText: String, animAsset: String,  delayMs: Long = 3000,  function: () -> Unit) {
             if (context is Activity && !context.isFinishing) {
                 val rootView = context.findViewById<View>(android.R.id.content)
                 val parentLayout = rootView.findViewById<ConstraintLayout>(R.id.clParentAlertDialog)
@@ -99,7 +99,7 @@ class AlertDialogUtility {
                 Handler(Looper.getMainLooper()).postDelayed({
                     alertDialog.dismiss()
                     function()
-                }, 3000)
+                }, delayMs)
             }
         }
 

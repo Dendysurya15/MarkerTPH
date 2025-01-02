@@ -37,8 +37,9 @@ class TPHViewModel(application: Application, private val repository: TPHReposito
     val resultCountDataNonArchive: LiveData<Int> = _resultCountDataNonArchive
 
 
-    fun uploadData(context: Context , dataList: List<UploadData>): LiveData<Result<List<UploadResponse>>> {
-        return repository.uploadDataServer(context , dataList)
+    // Change from List<UploadResponse> to single UploadResponse
+    fun uploadData(context: Context, dataList: List<UploadData>): LiveData<Result<UploadResponse>> {
+        return repository.uploadDataServer(context, dataList)
     }
 
     fun insertPanenTBSVM(

@@ -189,13 +189,13 @@ class UploadDataFragment : Fragment() {
 
                         // Show success message
                         Toast.makeText(context, "Data berhasil diupload!", Toast.LENGTH_SHORT).show()
-                        AlertDialogUtility.alertDialogAction(
-                            requireContext(),
-                            "Sukses Upload",
-                            "Data sudah berhasil di-upload!",
-                            "success.json"
-                        ) {
-                        }
+//                        AlertDialogUtility.alertDialogAction(
+//                            requireContext(),
+//                            "Sukses Upload",
+//                            "Data sudah berhasil di-upload!",
+//                            "success.json"
+//                        ) {
+//                        }
                         loadingDialog.dismiss()
                     }
                     result.isFailure -> {
@@ -249,7 +249,7 @@ class UploadDataFragment : Fragment() {
             addActionItem(
                 SpeedDialActionItem.Builder(R.id.cancelSelection, R.drawable.baseline_check_box_outline_blank_24)  // Use appropriate icon
                     .setLabel("Batalkan Pilihan")
-                    .setFabBackgroundColor(ContextCompat.getColor(requireContext(), R.color.colorRedDark))  // Use appropriate color
+                    .setFabBackgroundColor(ContextCompat.getColor(requireContext(), R.color.yellowbutton))  // Use appropriate color
                     .create()
             )
 

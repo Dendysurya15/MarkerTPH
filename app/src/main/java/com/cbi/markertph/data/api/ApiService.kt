@@ -1,5 +1,6 @@
 package com.cbi.markertph.data.api
 
+import com.cbi.markertph.data.model.BatchUploadRequest
 import com.cbi.markertph.data.model.UploadData
 import com.cbi.markertph.data.model.UploadResponse
 import retrofit2.Call
@@ -15,5 +16,5 @@ interface ApiService {
         "Content-Type: application/json"
     )
     @POST("storeDataTPH")
-    fun uploadData(@Body data: UploadData): Call<UploadResponse>
+    fun uploadData(@Body data: BatchUploadRequest): Call<UploadResponse>
 }
