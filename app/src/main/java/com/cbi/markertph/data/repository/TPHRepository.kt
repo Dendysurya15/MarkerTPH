@@ -29,6 +29,7 @@ import com.cbi.markertph.data.model.UploadData
 import com.cbi.markertph.data.model.UploadResponse
 import com.cbi.markertph.data.network.RetrofitClient
 import com.cbi.markertph.utils.AlertDialogUtility
+import org.json.JSONObject
 import retrofit2.Call
 import retrofit2.Callback
 import retrofit2.Response
@@ -140,7 +141,9 @@ class TPHRepository(context: Context) {
                 override fun onResponse(call: Call<UploadResponse>, response: Response<UploadResponse>) {
                     if (response.isSuccessful && response.body() != null) {
                         val uploadResponse = response.body()!!
+
                         if (uploadResponse.success) {
+                            // If the response is a success, proceed as before
                             responses.add(uploadResponse)
                             Log.d("upload", "Item ${index + 1} uploaded successfully. Response: ${uploadResponse.message}")
 
@@ -158,20 +161,32 @@ class TPHRepository(context: Context) {
                                 attemptUpload(index + 1)
                             }
                         } else {
-                            handleFailure(index, "Server returned failure: ${uploadResponse.message}")
+                            // If the server returns failure, directly extract the message from the body
+                            val errorMessage = response.body()?.message ?: "Unknown error"
+                            Log.d("testing", errorMessage)
+                            handleFailure(errorMessage)
                         }
                     } else {
-                        handleFailure(index, "Error uploading data: ${response.errorBody()?.string()}")
+                        // If the response is unsuccessful, handle the error message
+                        try {
+                            val errorJson = response.errorBody()?.string()
+                            val errorObj = JSONObject(errorJson!!)
+                            val errorMessage = errorObj.getString("message")
+                            handleFailure(errorMessage)
+                        } catch (e: Exception) {
+                            handleFailure("Error uploading data: Unknown error")
+                        }
                     }
                 }
 
                 override fun onFailure(call: Call<UploadResponse>, t: Throwable) {
-                    handleFailure(index, "Network failure: ${t.message}")
+                    handleFailure("Network failure: ${t.message}")
                 }
 
-                private fun handleFailure(index: Int, errorMessage: String) {
+                private fun handleFailure(errorMessage: String) {
                     Log.e("upload", errorMessage)
 
+                    // Show the dialog with just the error message
                     AlertDialogUtility.withSingleAction(
                         context,
                         "Kembali",
@@ -181,6 +196,7 @@ class TPHRepository(context: Context) {
                         R.color.colorRedDark
                     ) {}
 
+                    // Post the failure with just the error message
                     result.postValue(Result.failure(Exception(errorMessage)))
                     executor.shutdown()
                 }
@@ -190,6 +206,8 @@ class TPHRepository(context: Context) {
         executor.execute { attemptUpload(0) }
         return result
     }
+
+
 
 
     fun updateArchiveStatus(id: Int, status: Int) {

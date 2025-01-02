@@ -181,11 +181,8 @@ class UploadDataFragment : Fragment() {
             tphViewModel.uploadData(requireContext(), uploadDataList).observe(requireActivity()) { result ->
                 when {
                     result.isSuccess -> {
-                        // Handle successful upload
                         val responses = result.getOrNull()
 
-
-                        // Refresh data after successful upload
                         tphViewModel.loadDataAllTPH(currentArchiveState)
                         tphViewModel.countDataArchive()
                         tphViewModel.countDataNonArchive()

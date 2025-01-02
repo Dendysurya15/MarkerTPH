@@ -28,6 +28,7 @@
                 android:layout_gravity="center"
                 android:minWidth="48dp"
                 android:visibility="gone"
+                style="@style/defaultBoxColor"
                 android:minHeight="48dp"/>
 
             <TextView
