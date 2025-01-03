@@ -230,6 +230,7 @@ class TPHRepository(context: Context) {
                                             val wasStored = storedData?.any { stored ->
                                                 (stored as? Map<*, *>)?.let { map ->
                                                     map["datetime"] == data.datetime &&
+                                                            map["user_input"] == data.user_input &&
                                                     map["estate"] == data.estate &&
                                                     map["afdeling"] == data.afdeling &&
                                                     map["blok"] == data.blok &&

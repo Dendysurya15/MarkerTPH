@@ -215,7 +215,7 @@ class UploadDataFragment : Fragment() {
             requireContext(),
             stringXML(R.string.al_delete),
             stringXML(R.string.confirmation_dialog_title),
-            "${R.string.al_make_sure_delete} ${selectedItems.size} data?",
+            "${stringXML(R.string.al_make_sure_delete)} ${selectedItems.size} data?",
             "warning.json",
             ContextCompat.getColor(requireContext(), R.color.colorRedDark)
         ) {
@@ -223,10 +223,10 @@ class UploadDataFragment : Fragment() {
             tphViewModel.deleteMultipleItems(selectedItems)
             tphViewModel.deleteItemsResult.observe(viewLifecycleOwner) { isSuccess ->
                 if (isSuccess) {
-                    Toast.makeText(context, "${R.string.al_success_delete} ${selectedItems.size} data", Toast.LENGTH_SHORT).show()
+                    Toast.makeText(context, "${stringXML(R.string.al_success_delete)} ${selectedItems.size} data", Toast.LENGTH_SHORT).show()
                     observeData()
                 } else {
-                    Toast.makeText(context, "${R.string.al_failed_delete} data", Toast.LENGTH_SHORT).show()
+                    Toast.makeText(context, "${stringXML(R.string.al_failed_delete)} data", Toast.LENGTH_SHORT).show()
                 }
                 binding.tableHeader.headerCheckBoxPanen.isChecked = false
                 tphAdapter.clearSelections()

@@ -43,7 +43,7 @@
 <!--    dial list-->
     <string name="dial_unselect_item">Batalkan Pilihan</string>
     <string name="dial_upload_item">Upload Item Terpilih</string>
-    <string name="dial_delete_item">Batalkan Pilihan</string>
+    <string name="dial_delete_item">Hapus Item Pilihan</string>
 
 <!--    spinner dropdown atau edit text home Fragment-->
     <string name="field_nama_user">Nama User</string>
