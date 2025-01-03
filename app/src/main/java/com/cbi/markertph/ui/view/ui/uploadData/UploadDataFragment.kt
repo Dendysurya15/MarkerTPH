@@ -30,6 +30,7 @@ import com.cbi.markertph.data.database.DatabaseHelper.Companion.KEY_LON
 import com.cbi.markertph.data.database.DatabaseHelper.Companion.KEY_TANGGAL
 import com.cbi.markertph.data.database.DatabaseHelper.Companion.KEY_TPH
 import com.cbi.markertph.data.database.DatabaseHelper.Companion.KEY_TPH_ID
+import com.cbi.markertph.data.database.DatabaseHelper.Companion.KEY_USER_INPUT
 import com.cbi.markertph.data.model.UploadData
 import com.cbi.markertph.data.repository.TPHRepository
 import com.cbi.markertph.databinding.FragmentUploadDataBinding
@@ -37,6 +38,7 @@ import com.cbi.markertph.ui.adapter.TPHAdapter
 import com.cbi.markertph.ui.viewModel.TPHViewModel
 import com.cbi.markertph.utils.AlertDialogUtility
 import com.cbi.markertph.utils.AppUtils
+import com.cbi.markertph.utils.AppUtils.stringXML
 import com.cbi.markertph.utils.AppUtils.vibrate
 import com.cbi.markertph.utils.LoadingDialog
 import com.google.android.material.bottomnavigation.BottomNavigationView
@@ -155,9 +157,9 @@ class UploadDataFragment : Fragment() {
     private fun handleUpload(selectedItems: List<Map<String, Any>>) {
         AlertDialogUtility.withTwoActions(
             requireContext(),
-            "Submit",
-            getString(R.string.confirmation_dialog_title),
-            "Apakah anda yakin untuk mengupload ${selectedItems.size} data?",
+            stringXML(R.string.al_submit),
+            stringXML(R.string.confirmation_dialog_title),
+            "${stringXML(R.string.al_make_sure_upload)} ${selectedItems.size} data?",
             "warning.json"
         ) {
 
@@ -168,6 +170,7 @@ class UploadDataFragment : Fragment() {
                     id = it["id"] as Int,
                     datetime = it["tanggal"] as String,
                     estate = it["estate"] as String,
+                    user_input = it["user_input"] as String,
                     afdeling = it["afdeling"] as String,
                     blok = it["blok"] as String,
                     tph = it["tph"] as String,
@@ -187,15 +190,6 @@ class UploadDataFragment : Fragment() {
                         tphViewModel.countDataArchive()
                         tphViewModel.countDataNonArchive()
 
-                        // Show success message
-                        Toast.makeText(context, "Data berhasil diupload!", Toast.LENGTH_SHORT).show()
-//                        AlertDialogUtility.alertDialogAction(
-//                            requireContext(),
-//                            "Sukses Upload",
-//                            "Data sudah berhasil di-upload!",
-//                            "success.json"
-//                        ) {
-//                        }
                         loadingDialog.dismiss()
                     }
                     result.isFailure -> {
@@ -204,7 +198,7 @@ class UploadDataFragment : Fragment() {
                         Log.e("testing", "Failed to upload: ${error?.message}")
 
                         // Show error message
-                        Toast.makeText(context, "Gagal mengupload data: ${error?.message}", Toast.LENGTH_SHORT).show()
+                        Toast.makeText(context, "${stringXML(R.string.al_failed_upload)} :${error?.message}", Toast.LENGTH_SHORT).show()
 
                         loadingDialog.dismiss()
                     }
@@ -219,9 +213,9 @@ class UploadDataFragment : Fragment() {
         requireContext().vibrate()
         AlertDialogUtility.withTwoActions(
             requireContext(),
-            "Hapus",
-            getString(R.string.confirmation_dialog_title),
-            "Apakah anda yakin untuk menghapus ${selectedItems.size} data?",
+            stringXML(R.string.al_delete),
+            stringXML(R.string.confirmation_dialog_title),
+            "${R.string.al_make_sure_delete} ${selectedItems.size} data?",
             "warning.json",
             ContextCompat.getColor(requireContext(), R.color.colorRedDark)
         ) {
@@ -229,10 +223,10 @@ class UploadDataFragment : Fragment() {
             tphViewModel.deleteMultipleItems(selectedItems)
             tphViewModel.deleteItemsResult.observe(viewLifecycleOwner) { isSuccess ->
                 if (isSuccess) {
-                    Toast.makeText(context, "Berhasil menghapus ${selectedItems.size} data", Toast.LENGTH_SHORT).show()
+                    Toast.makeText(context, "${R.string.al_success_delete} ${selectedItems.size} data", Toast.LENGTH_SHORT).show()
                     observeData()
                 } else {
-                    Toast.makeText(context, "Gagal menghapus data", Toast.LENGTH_SHORT).show()
+                    Toast.makeText(context, "${R.string.al_failed_delete} data", Toast.LENGTH_SHORT).show()
                 }
                 binding.tableHeader.headerCheckBoxPanen.isChecked = false
                 tphAdapter.clearSelections()
@@ -248,21 +242,21 @@ class UploadDataFragment : Fragment() {
 
             addActionItem(
                 SpeedDialActionItem.Builder(R.id.cancelSelection, R.drawable.baseline_check_box_outline_blank_24)  // Use appropriate icon
-                    .setLabel("Batalkan Pilihan")
+                    .setLabel(stringXML(R.string.dial_unselect_item))
                     .setFabBackgroundColor(ContextCompat.getColor(requireContext(), R.color.yellowbutton))  // Use appropriate color
                     .create()
             )
 
             addActionItem(
                 SpeedDialActionItem.Builder(R.id.uploadSelected, R.drawable.baseline_cloud_upload_24)
-                    .setLabel("Upload Item Terpilih")
+                    .setLabel(stringXML(R.string.dial_upload_item))
                     .setFabBackgroundColor(ContextCompat.getColor(requireContext(), R.color.greendarkerbutton))
                     .create()
             )
 
             addActionItem(
                 SpeedDialActionItem.Builder(R.id.deleteSelected, R.drawable.baseline_delete_24)
-                    .setLabel("Hapus Item Terpilih")
+                    .setLabel(stringXML(R.string.dial_delete_item))
                     .setFabBackgroundColor(ContextCompat.getColor(requireContext(), R.color.colorRedDark))
                     .create()
             )
@@ -287,12 +281,11 @@ class UploadDataFragment : Fragment() {
                         if (AppUtils.isInternetAvailable(requireContext())) {
                             handleUpload(selectedItems)
                         } else {
-                            Log.d("testing", "internet tidak adaaaa")
                             AlertDialogUtility.withSingleAction(
                                 requireContext(),
-                                "Kembali",
-                                "Tidak Ada Internet!",
-                                "Internet tidak tersedia. Mohon sambungkan perangkat Anda ke jaringan internet!",
+                                stringXML(R.string.al_back),
+                                stringXML(R.string.al_no_internet_connection),
+                                stringXML(R.string.al_no_internet_connection_description),
                                 "network_error.json",
                                 R.color.colorRedDark
                             ) {
@@ -483,21 +476,24 @@ class UploadDataFragment : Fragment() {
                 dataTPHList.clear()
 
                 data.forEach { record ->
-                    val recordMap = mutableMapOf<String, Any>()
-                    recordMap[KEY_ID] = record.id
-                    recordMap[KEY_TANGGAL] = record.tanggal
-                    recordMap[KEY_ESTATE] = record.estate
-                    recordMap[KEY_ESTATE_ID] = record.id_estate
-                    recordMap[KEY_AFDELING] = record.afdeling
-                    recordMap[KEY_AFDELING_ID] = record.id_afdeling
-                    recordMap[KEY_BLOK] = record.blok
-                    recordMap[KEY_BLOK_ID] = record.id_blok
-                    recordMap[KEY_TPH] = record.tph
-                    recordMap[KEY_TPH_ID] = record.id_tph
-                    recordMap[KEY_LAT] = record.latitude
-                    recordMap[KEY_LON] = record.longitude
-                    recordMap[KEY_APP_VERSION] = record.app_version
-                    dataTPHList.add(recordMap)
+                    record?.let { safeRecord ->  // Only process non-null records
+                        val recordMap = mutableMapOf<String, Any>()
+                        recordMap[KEY_ID] = safeRecord.id ?: 0
+                        recordMap[KEY_TANGGAL] = safeRecord.tanggal ?: ""
+                        recordMap[KEY_ESTATE] = safeRecord.estate ?: ""
+                        recordMap[KEY_USER_INPUT] = safeRecord.user_input ?: ""
+                        recordMap[KEY_ESTATE_ID] = safeRecord.id_estate ?: 0
+                        recordMap[KEY_AFDELING] = safeRecord.afdeling ?: ""
+                        recordMap[KEY_AFDELING_ID] = safeRecord.id_afdeling ?: 0
+                        recordMap[KEY_BLOK] = safeRecord.blok ?: ""
+                        recordMap[KEY_BLOK_ID] = safeRecord.id_blok ?: 0
+                        recordMap[KEY_TPH] = safeRecord.tph ?: ""
+                        recordMap[KEY_TPH_ID] = safeRecord.id_tph ?: 0
+                        recordMap[KEY_LAT] = safeRecord.latitude ?: ""
+                        recordMap[KEY_LON] = safeRecord.longitude ?: ""
+                        recordMap[KEY_APP_VERSION] = safeRecord.app_version ?: ""
+                        dataTPHList.add(recordMap)
+                    }
                 }
 
                 // Update RecyclerView with new data
@@ -522,7 +518,7 @@ class UploadDataFragment : Fragment() {
                 // Optionally show error message
                 Handler(Looper.getMainLooper()).postDelayed({
                     loadingDialog.dismiss()
-                    Toast.makeText(context, "Failed to load data", Toast.LENGTH_SHORT).show()
+                    Toast.makeText(context, stringXML(R.string.toast_failed_load_data), Toast.LENGTH_SHORT).show()
                 }, 1000)
             }
         }

@@ -26,12 +26,14 @@ import com.cbi.markertph.data.database.DatabaseHelper.Companion.KEY_LON
 import com.cbi.markertph.data.database.DatabaseHelper.Companion.KEY_TANGGAL
 import com.cbi.markertph.data.database.DatabaseHelper.Companion.KEY_TPH
 import com.cbi.markertph.data.database.DatabaseHelper.Companion.KEY_TPH_ID
+import com.cbi.markertph.data.database.DatabaseHelper.Companion.KEY_USER_INPUT
 import com.cbi.markertph.data.model.BatchUploadRequest
 import com.cbi.markertph.data.model.TPHModel
 import com.cbi.markertph.data.model.UploadData
 import com.cbi.markertph.data.model.UploadResponse
 import com.cbi.markertph.data.network.RetrofitClient
 import com.cbi.markertph.utils.AlertDialogUtility
+import com.cbi.markertph.utils.AppUtils.stringXML
 import com.google.gson.Gson
 import org.json.JSONObject
 import retrofit2.Call
@@ -48,6 +50,7 @@ class TPHRepository(context: Context) {
         val db = databaseHelper.writableDatabase
         val values = ContentValues().apply {
             put(DatabaseHelper.KEY_TANGGAL, data.tanggal)
+            put(DatabaseHelper.KEY_USER_INPUT, data.user_input)
             put(DatabaseHelper.KEY_ESTATE, data.estate)
             put(DatabaseHelper.KEY_ESTATE_ID, data.id_estate)
             put(DatabaseHelper.KEY_AFDELING, data.afdeling)
@@ -78,20 +81,21 @@ class TPHRepository(context: Context) {
         cursor.use {
             while (it.moveToNext()) {
                 val data = TPHModel(
-                    id = it.getInt(it.getColumnIndex(KEY_ID)),
-                    tanggal = it.getString(it.getColumnIndex(KEY_TANGGAL)),
-                    estate = it.getString(it.getColumnIndex(KEY_ESTATE)),
-                    id_estate = it.getInt(it.getColumnIndex(KEY_ESTATE_ID)),
-                    afdeling = it.getString(it.getColumnIndex(KEY_AFDELING)),
-                    id_afdeling = it.getInt(it.getColumnIndex(KEY_AFDELING_ID)),
-                    blok = it.getString(it.getColumnIndex(KEY_BLOK)),
-                    id_blok = it.getInt(it.getColumnIndex(KEY_BLOK_ID)),
-                    tph = it.getString(it.getColumnIndex(KEY_TPH)),
-                    id_tph = it.getInt(it.getColumnIndex(KEY_TPH_ID)),
-                    latitude = it.getString(it.getColumnIndex(KEY_LAT)),
-                    longitude = it.getString(it.getColumnIndex(KEY_LON)),
-                    archive =  it.getInt(it.getColumnIndex(DB_ARCHIVE)),
-                    app_version = it.getString(it.getColumnIndex(KEY_APP_VERSION))
+                    id = it.getInt(it.getColumnIndexOrThrow(KEY_ID)),
+                    tanggal = it.getString(it.getColumnIndexOrThrow(KEY_TANGGAL)) ?: "",
+                    estate = it.getString(it.getColumnIndexOrThrow(KEY_ESTATE)) ?: "",
+                    user_input = it.getString(it.getColumnIndexOrThrow(KEY_USER_INPUT)) ?: "",
+                    id_estate = it.getInt(it.getColumnIndexOrThrow(KEY_ESTATE_ID)),
+                    afdeling = it.getString(it.getColumnIndexOrThrow(KEY_AFDELING)) ?: "",
+                    id_afdeling = it.getInt(it.getColumnIndexOrThrow(KEY_AFDELING_ID)),
+                    blok = it.getString(it.getColumnIndexOrThrow(KEY_BLOK)) ?: "",
+                    id_blok = it.getInt(it.getColumnIndexOrThrow(KEY_BLOK_ID)),
+                    tph = it.getString(it.getColumnIndexOrThrow(KEY_TPH)) ?: "",
+                    id_tph = it.getInt(it.getColumnIndexOrThrow(KEY_TPH_ID)),
+                    latitude = it.getString(it.getColumnIndexOrThrow(KEY_LAT)) ?: "",
+                    longitude = it.getString(it.getColumnIndexOrThrow(KEY_LON)) ?: "",
+                    archive = it.getInt(it.getColumnIndexOrThrow(DB_ARCHIVE)),
+                    app_version = it.getString(it.getColumnIndexOrThrow(KEY_APP_VERSION)) ?: ""
                 )
                 dataTPH.add(data)
             }
@@ -204,52 +208,73 @@ class TPHRepository(context: Context) {
 
                                     AlertDialogUtility.withSingleAction(
                                         context,
-                                        "Kembali",
-                                        "Peringkatan Data Duplikat!",
-                                        "${dataList.size} data terdeteksi sudah ada didatabase server. Mohon untuk menghapus secara manual!",
+                                        context.stringXML(R.string.al_back),
+                                        context.stringXML(R.string.al_data_duplicate),
+                                        "${dataList.size} ${context.stringXML(R.string.al_data_duplicate_description)}",
                                         "warning.json",
                                         R.color.orange
                                     ) {
-                                        Log.d(TAG, "User acknowledged error dialog")
-                                        Toast.makeText(context, "${dataList.size} data terdeteksi sudah ada didatabase server. Mohon untuk menghapus secara manual!", Toast.LENGTH_LONG).show()
                                     }
+                                    Toast.makeText(context, "${dataList.size} ${context.stringXML(R.string.al_data_duplicate_description)}", Toast.LENGTH_LONG).show()
                                     result.postValue(Result.success(uploadResponse))
                                 }
                                 1 -> {
                                     try {
                                         val responseData = uploadResponse.data as? Map<*, *>
                                         val storedData = responseData?.get("stored") as? List<*>
+                                        val duplicateCount = dataList.size - (storedData?.size ?: 0)
 
+
+                                        var successfulUpdates = 0
                                         dataList.forEach { data ->
                                             val wasStored = storedData?.any { stored ->
                                                 (stored as? Map<*, *>)?.let { map ->
                                                     map["datetime"] == data.datetime &&
-                                                            map["estate"] == data.estate &&
-                                                            map["afdeling"] == data.afdeling &&
-                                                            map["blok"] == data.blok &&
-                                                            map["tph"] == data.tph
+                                                    map["estate"] == data.estate &&
+                                                    map["afdeling"] == data.afdeling &&
+                                                    map["blok"] == data.blok &&
+                                                    map["tph"] == data.tph
                                                 } ?: false
                                             } ?: false
 
                                             if (wasStored) {
                                                 updateArchiveStatus(data.id, 1)
+                                                successfulUpdates++
                                                 Log.d(TAG, "Updated archive status for ID: ${data.id}")
                                             } else {
                                                 Log.d(TAG, "Skipped archive status update for ID: ${data.id}")
                                             }
                                         }
 
-                                        AlertDialogUtility.alertDialogAction(
-                                            context,
-                                            "Sukses Upload",
-                                            "Data sudah berhasil di-upload!",
-                                            "success.json"
-                                        ) {
+                                        // Show appropriate message based on what happened
+                                        if (duplicateCount > 0) {
+                                            // If there are both new and duplicate records, show a dialog that requires acknowledgment
+                                            AlertDialogUtility.withSingleAction(
+                                                context,
+                                                context.stringXML(R.string.al_back),
+                                                context.stringXML(R.string.al_success_upload),
+                                                "${context.stringXML(R.string.al_success_upload_description)} ${successfulUpdates} data\n" +
+                                                        "${duplicateCount} ${context.stringXML(R.string.al_data_duplicate_description)}",
+                                                "success.json",
+                                                R.color.orange
+                                            ) {
+
+                                            }
+                                        } else {
+                                            // If all records are new and successful, show auto-dismissing success dialog
+                                            AlertDialogUtility.alertDialogAction(
+                                                context,
+                                                context.stringXML(R.string.al_success_upload),
+                                                "${context.stringXML(R.string.al_success_upload_description)} ${successfulUpdates} data!",
+                                                "success.json"
+                                            ) {
+                                                Log.d(TAG, "Success dialog auto-dismissed")
+                                            }
                                         }
+
                                         result.postValue(Result.success(uploadResponse))
                                     } catch (e: Exception) {
                                         Log.e(TAG, "Error updating archive status: ${e.message}", e)
-                                        Toast.makeText(context, "Error updating archive status: ${e.message}", Toast.LENGTH_LONG).show()
                                         result.postValue(Result.failure(e))
                                     }
                                 }
@@ -298,13 +323,13 @@ class TPHRepository(context: Context) {
 
         AlertDialogUtility.withSingleAction(
             context,
-            "Kembali",
-            "Terjadi Kesalahan Upload!",
-            "Periksa kembali data yang di-upload! Error: $errorMessage",
+            context.stringXML(R.string.al_back),
+            context.stringXML(R.string.al_failed_upload),
+            "${context.stringXML(R.string.al_failed_upload_description)}: $errorMessage",
             "warning.json",
             R.color.colorRedDark
         ) {
-            Log.d(TAG, "User acknowledged error dialog")
+
         }
 
         result.postValue(Result.failure(Exception(errorMessage)))

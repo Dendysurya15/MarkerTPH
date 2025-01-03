@@ -14,6 +14,7 @@ class DatabaseHelper(context: Context):
 
         val DB_TABLE_TPH = "db_tph"
         val KEY_ID = "id"
+        val KEY_USER_INPUT = "user_input"
         val KEY_ESTATE = "estate"
         val KEY_ESTATE_ID = "id_estate"
         val KEY_TANGGAL = "tanggal"
@@ -34,6 +35,7 @@ class DatabaseHelper(context: Context):
         CREATE TABLE IF NOT EXISTS $DB_TABLE_TPH (
             $KEY_ID INTEGER PRIMARY KEY AUTOINCREMENT,
             $KEY_TANGGAL VARCHAR,
+            $KEY_USER_INPUT VARCHAR,
             $KEY_ESTATE VARCHAR,
             $KEY_ESTATE_ID INTEGER,
            $KEY_AFDELING VARCHAR,

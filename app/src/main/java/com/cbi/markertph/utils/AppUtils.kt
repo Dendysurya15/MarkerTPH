@@ -8,6 +8,7 @@ import android.os.VibrationEffect
 import android.os.Vibrator
 import android.widget.TextView
 import android.widget.Toast
+import androidx.fragment.app.Fragment
 import com.cbi.markertph.R
 
 object AppUtils {
@@ -26,7 +27,7 @@ object AppUtils {
 
 
     fun getAppVersion(context: Context): String {
-        return "Versi ${context.getString(R.string.app_version)}"
+        return "${context.stringXML(R.string.version_word)} ${context.getString(R.string.app_version)}"
     }
 
     fun isInternetAvailable(context: Context): Boolean {
@@ -34,10 +35,6 @@ object AppUtils {
         val network = connectivityManager.activeNetwork ?: return false
         val capabilities = connectivityManager.getNetworkCapabilities(network) ?: return false
         return capabilities.hasCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET)
-    }
-
-    fun showNoInternetToast(context: Context) {
-        Toast.makeText(context, "No internet connection available", Toast.LENGTH_SHORT).show()
     }
 
     fun Context.vibrate() {
@@ -49,5 +46,13 @@ object AppUtils {
             @Suppress("DEPRECATION")
             vibrator.vibrate(100)
         }
+    }
+
+    fun Fragment.stringXML(field: Int): String {
+        return requireContext().getString(field)
+    }
+
+    fun Context.stringXML(field: Int): String {
+        return getString(field)
     }
 }

@@ -23,6 +23,7 @@
         <activity
             android:name=".ui.view.HomePage"
             android:exported="false"
+            android:windowSoftInputMode="adjustPan"
             android:label="@string/title_activity_home_page"
             android:theme="@style/Theme.MarkerTPH" />
         <activity

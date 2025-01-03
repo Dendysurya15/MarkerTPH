@@ -7,4 +7,56 @@
     <string name="title_notifications">Notifications</string>
     <string name="confirmation_dialog_title">Konfirmasi Pilihan Anda!</string>
     <string name="confirmation_dialog_description">Pastikan Anda telah memeriksa dengan teliti sebelum melanjutkan.</string>
+
+<!--    alert-->
+    <string name="al_save">Simpan</string>
+    <string name="al_success_save_local">Sukses Simpan</string>
+    <string name="al_description_success_save_local">Data berhasil disimpan!</string>
+    <string name="al_failed_save_local">Gagal Simpan</string>
+    <string name="al_description_failed_save_local">Data gagal disimpan!</string>
+    <string name="al_back">Kembali</string>
+    <string name="al_data_not_completed">Data Belum Lengkap!</string>
+    <string name="al_pls_complete_data">Mohon lengkapi data yang belum diisi!</string>
+    <string name="al_submit">Submit</string>
+    <string name="al_make_sure_upload">Apakah anda yakin untuk mengupload</string>
+    <string name="al_make_sure_delete">Apakah anda yakin untuk menghapus</string>
+    <string name="al_failed_upload">Gagal Upload Data</string>
+    <string name="al_failed_upload_description">Periksa kembali data yang di-upload! Error</string>
+    <string name="al_delete">Hapus</string>
+    <string name="al_success_delete">Berhasil menghapus</string>
+    <string name="al_failed_delete">Gagal menghapus</string>
+    <string name="al_no_internet_connection">Tidak Ada Internet!</string>
+    <string name="al_no_internet_connection_description">Internet tidak tersedia. Mohon sambungkan perangkat Anda ke jaringan internet!</string>
+    <string name="al_data_duplicate">Peringatan Data Duplikat!</string>
+    <string name="al_data_duplicate_description">data terdeteksi sudah ada didatabase server. Mohon untuk menghapus secara manual!</string>
+    <string name="al_success_upload">Upload Berhasil</string>
+    <string name="al_success_upload_description">Berhasil Upload</string>
+    <string name="al_location_not_ready">GPS Tidak terdeteksi!</string>
+    <string name="al_location_description_failed"> Perangkat tidak dapat mendeteksi lokasi Anda saat ini. Pastikan layanan lokasi di perangkat Anda aktif!</string>
+
+
+
+<!--    toast-->
+    <string name="toast_failed_save_local">Data gagal disimpan!</string>
+    <string name="toast_failed_load_data">Gagal mengambil data. Silakan coba lagi.</string>
+
+<!--    dial list-->
+    <string name="dial_unselect_item">Batalkan Pilihan</string>
+    <string name="dial_upload_item">Upload Item Terpilih</string>
+    <string name="dial_delete_item">Batalkan Pilihan</string>
+
+<!--    spinner dropdown atau edit text home Fragment-->
+    <string name="field_nama_user">Nama User</string>
+    <string name="field_estate">Estate</string>
+    <string name="field_afdeling">Afdeling</string>
+    <string name="field_blok">Blok</string>
+    <string name="field_tph">TPH</string>
+
+<!--    setting-->
+    <string name="location_permission_message">Izin lokasi diperlukan untuk aplikasi ini. Ubah di Pengaturan Aplikasi.</string>
+    <string name="location_permission_denied">Izin lokasi ditolak.</string>
+
+<!--version app-->
+
+    <string name="version_word">Versi</string>
 </resources>

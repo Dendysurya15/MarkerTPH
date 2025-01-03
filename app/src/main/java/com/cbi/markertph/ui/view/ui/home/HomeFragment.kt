@@ -7,9 +7,14 @@ import android.os.Build
 import android.os.Bundle
 import android.os.VibrationEffect
 import android.os.Vibrator
+import android.text.Editable
+import android.text.TextWatcher
+import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.view.inputmethod.EditorInfo
+import android.view.inputmethod.InputMethodManager
 import android.widget.TextView
 import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
@@ -17,6 +22,7 @@ import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.ViewModelProvider
+import androidx.viewbinding.ViewBinding
 import com.cbi.markertph.R
 import com.cbi.markertph.data.repository.TPHRepository
 import com.cbi.markertph.databinding.FragmentHomeBinding
@@ -25,6 +31,7 @@ import com.cbi.markertph.ui.viewModel.LocationViewModel
 import com.cbi.markertph.ui.viewModel.TPHViewModel
 import com.cbi.markertph.utils.AlertDialogUtility
 import com.cbi.markertph.utils.AppUtils
+import com.cbi.markertph.utils.AppUtils.stringXML
 import com.cbi.markertph.utils.AppUtils.vibrate
 import com.google.android.material.button.MaterialButton
 import com.google.android.material.snackbar.Snackbar
@@ -43,19 +50,24 @@ class HomeFragment : Fragment() {
     private var isPermissionRationaleShown = false
     private var lat: Double? = null
     private var lon: Double? = null
-
+    private var userInput: String = ""
     private var selectedEstate: String = ""
     private var selectedAfdeling: String = ""
     private var selectedBlok: String = ""
     private var selectedTPH: String = ""
 
+    enum class InputType {
+        SPINNER,
+        EDITTEXT
+    }
 
+    private lateinit var inputMappings: List<Triple<PertanyaanSpinnerLayoutBinding, String, InputType>>
     private val requestPermissionLauncher =
         registerForActivityResult(ActivityResultContracts.RequestPermission()) { isGranted ->
             if (isGranted) {
                 locationViewModel.startLocationUpdates()
             } else {
-                showSnackbar("Location permission denied.")
+                showSnackbar(stringXML(R.string.location_permission_denied))
             }
         }
 
@@ -73,9 +85,9 @@ class HomeFragment : Fragment() {
             if (validateAndShowErrors()) {
                 AlertDialogUtility.withTwoActions(
                     requireContext(),
-                    "Simpan",
-                    getString(R.string.confirmation_dialog_title),
-                    getString(R.string.confirmation_dialog_description),
+                    stringXML(R.string.al_save),
+                    stringXML(R.string.confirmation_dialog_title),
+                    stringXML(R.string.confirmation_dialog_description),
                     "warning.json"
                 ) {
 
@@ -84,6 +96,7 @@ class HomeFragment : Fragment() {
                         tanggal = SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.getDefault()).format(
                             Date()
                         ),
+                        user_input = userInput,
                         estate = selectedEstate,
                         id_estate = 1,
                         afdeling = selectedAfdeling,
@@ -101,15 +114,22 @@ class HomeFragment : Fragment() {
                         if (isInserted){
                             AlertDialogUtility.alertDialogAction(
                                 requireContext(),
-                                "Sukses Simpan",
-                                "Data berhasil disimpan!",
+                                stringXML(R.string.al_success_save_local),
+                                stringXML(R.string.al_description_success_save_local),
                                 "success.json"
                                 ) {
                             }
                         }else{
+                            AlertDialogUtility.alertDialogAction(
+                                requireContext(),
+                                stringXML(R.string.al_failed_save_local),
+                                stringXML(R.string.al_description_failed_save_local),
+                                "warning.json"
+                            ) {
+                            }
                             Toast.makeText(
                                 requireContext(),
-                                "Error Saving Data",
+                                stringXML(R.string.toast_failed_save_local),
                                 Toast.LENGTH_LONG
                             ).show()
                         }
@@ -152,12 +172,15 @@ class HomeFragment : Fragment() {
     }
 
     private fun setupLayout() {
-        val spinnerMappings = listOf(
-            Pair(binding.layoutEstate, "Estate"),
-            Pair(binding.layoutAfdeling, "Afdeling"),
-            Pair(binding.layoutBlok, "Blok"),
-            Pair(binding.layoutTPH, "TPH"),
+        // Define input types for each field
+        inputMappings = listOf(
+            Triple(binding.layoutUserInput, stringXML(R.string.field_nama_user), InputType.EDITTEXT),
+            Triple(binding.layoutEstate , stringXML(R.string.field_estate), InputType.SPINNER),
+            Triple(binding.layoutAfdeling , stringXML(R.string.field_afdeling), InputType.SPINNER),
+            Triple(binding.layoutBlok , stringXML(R.string.field_blok),InputType.SPINNER),
+            Triple(binding.layoutTPH , stringXML(R.string.field_tph), InputType.SPINNER)
         )
+
         val dummyData = mapOf(
             "Estate" to listOf("NBE", "SLE"),
             "Afdeling" to listOf("OA", "OB", "OC"),
@@ -165,28 +188,76 @@ class HomeFragment : Fragment() {
             "TPH" to listOf("TPH 10", "TPH 11", "TPH 12")
         )
 
-        spinnerMappings.forEach { (layoutBinding, key) ->
-            val data = dummyData[key] ?: emptyList()
-            updateTextInPertanyaanSpinner(layoutBinding, key)
-            setupSpinnerDropdown(layoutBinding, data)
+        inputMappings.forEach { (layoutBinding, key, inputType) ->
+            updateTextInPertanyaan(layoutBinding, key)
+            when (inputType) {
+                InputType.SPINNER -> {
+                    val data = dummyData[key] ?: emptyList()
+                    setupSpinnerView(layoutBinding, data)  // Using this
+                }
+                InputType.EDITTEXT -> {
+                    setupEditTextView(layoutBinding)
+                }
+            }
         }
     }
 
-    private fun setupSpinnerDropdown(
-        layoutBinding: PertanyaanSpinnerLayoutBinding,
-        items: List<String>
-    ) {
-        val spinner = layoutBinding.spPanenTBS
-        spinner.setItems(items)
+    private fun setupSpinnerView(layoutBinding: PertanyaanSpinnerLayoutBinding, data: List<String>) {
+        with(layoutBinding) {
+            spPanenTBS.visibility = View.VISIBLE
+            etPanenTBS.visibility = View.GONE
 
-        spinner.setOnItemSelectedListener { _, _, _, item ->
-            val selectedItem = item.toString()
-            when (layoutBinding) {
-                binding.layoutEstate -> selectedEstate = selectedItem
-                binding.layoutAfdeling -> selectedAfdeling = selectedItem
-                binding.layoutBlok -> selectedBlok = selectedItem
-                binding.layoutTPH -> selectedTPH = selectedItem
+            spPanenTBS.setItems(data)
+            spPanenTBS.setOnItemSelectedListener { _, position, _, item ->
+                tvError.visibility = View.GONE
+                MCVSpinner.strokeColor = ContextCompat.getColor(root.context, R.color.graytextdark)
+
+                // Update values based on the layoutBinding
+                when (layoutBinding) {
+                    binding.layoutEstate -> selectedEstate = item.toString()
+                    binding.layoutAfdeling -> selectedAfdeling = item.toString()
+                    binding.layoutBlok -> selectedBlok = item.toString()
+                    binding.layoutTPH -> selectedTPH = item.toString()
+                }
             }
+        }
+    }
+
+    private fun setupEditTextView(layoutBinding: PertanyaanSpinnerLayoutBinding) {
+        with(layoutBinding) {
+            spPanenTBS.visibility = View.GONE
+            etPanenTBS.visibility = View.VISIBLE
+
+            // Handle enter key
+            etPanenTBS.setOnEditorActionListener { v, actionId, event ->
+                if (actionId == EditorInfo.IME_ACTION_DONE) {
+                    // Hide keyboard
+                    val imm = requireContext().getSystemService(Context.INPUT_METHOD_SERVICE) as InputMethodManager
+                    imm.hideSoftInputFromWindow(v.windowToken, 0)
+
+                    // Move focus to next view
+                    binding.layoutEstate.spPanenTBS.requestFocus()
+                    true
+                } else {
+                    false
+                }
+            }
+
+            etPanenTBS.addTextChangedListener(object : TextWatcher {
+                override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
+                override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {
+                    tvError.visibility = View.GONE
+                    MCVSpinner.strokeColor = ContextCompat.getColor(root.context, R.color.graytextdark)
+
+                    when (layoutBinding) {
+                        binding.layoutUserInput -> {
+                            userInput = s.toString()
+                            Log.d("EditText", "UserInput updated: $userInput")
+                        }
+                    }
+                }
+                override fun afterTextChanged(s: Editable?) {}
+            })
         }
     }
 
@@ -195,64 +266,84 @@ class HomeFragment : Fragment() {
         var isValid = true
         val missingFields = mutableListOf<String>()
 
-        // Check each field and update UI immediately
-        if (selectedEstate.isEmpty()) {
-            binding.layoutEstate.tvError.visibility = View.VISIBLE
-            missingFields.add("Estate")
-            binding.layoutEstate.MCVSpinner.strokeColor = ContextCompat.getColor(requireContext(), R.color.colorRedDark)
+        if (!locationEnable || lat == 0.0 || lon == 0.0) {
+            isValid = false
+            requireContext().vibrate()
+            AlertDialogUtility.withSingleAction(
+                requireContext(),
+                stringXML(R.string.al_back),
+                stringXML(R.string.al_location_not_ready),
+                stringXML(R.string.al_location_description_failed),
+                "warning.json",
+                R.color.colorRedDark
+            ) {
+                // Optionally trigger location refresh
+                locationViewModel.refreshLocationStatus()
+            }
+            return false
+        }
 
-            isValid = false
-        }
-        if (selectedAfdeling.isEmpty()) {
-            binding.layoutAfdeling.tvError.visibility = View.VISIBLE
-            missingFields.add("Afdeling")
-            binding.layoutAfdeling.MCVSpinner.strokeColor = ContextCompat.getColor(requireContext(), R.color.colorRedDark)
-            isValid = false
-        }
-        if (selectedBlok.isEmpty()) {
-            binding.layoutBlok.tvError.visibility = View.VISIBLE
-            missingFields.add("Blok")
-            binding.layoutBlok.MCVSpinner.strokeColor = ContextCompat.getColor(requireContext(), R.color.colorRedDark)
-            isValid = false
-        }
-        if (selectedTPH.isEmpty()) {
-            binding.layoutTPH.tvError.visibility = View.VISIBLE
-            missingFields.add("TPH")
-            binding.layoutTPH.MCVSpinner.strokeColor = ContextCompat.getColor(requireContext(), R.color.colorRedDark)
-            isValid = false
+        // Add debug logging
+        Log.d("Validation", "Starting validation for ${inputMappings.size} fields")
+
+        inputMappings.forEach { (layoutBinding, key, inputType) ->
+            Log.d("Validation", "Validating $key with type $inputType")
+
+            val isEmpty = when (inputType) {
+                InputType.SPINNER -> {
+                    when (layoutBinding) {
+                        binding.layoutEstate -> selectedEstate.isEmpty()
+                        binding.layoutAfdeling -> selectedAfdeling.isEmpty()
+                        binding.layoutBlok -> selectedBlok.isEmpty()
+                        binding.layoutTPH -> selectedTPH.isEmpty()
+                        else -> layoutBinding.spPanenTBS.selectedIndex == -1
+                    }
+                }
+                InputType.EDITTEXT -> {
+                    when (key) {
+                        "User Input" -> userInput.trim().isEmpty()
+                        else -> layoutBinding.etPanenTBS.text.toString().trim().isEmpty()
+                    }
+                }
+            }
+
+            if (isEmpty) {
+                layoutBinding.tvError.visibility = View.VISIBLE
+                layoutBinding.MCVSpinner.strokeColor = ContextCompat.getColor(
+                    requireContext(),
+                    R.color.colorRedDark
+                )
+                missingFields.add(key)
+                isValid = false
+                Log.d("Validation", "Field $key is empty")
+            } else {
+                layoutBinding.tvError.visibility = View.GONE
+                layoutBinding.MCVSpinner.strokeColor = ContextCompat.getColor(
+                    requireContext(),
+                    R.color.graytextdark
+                )
+                Log.d("Validation", "Field $key is valid")
+            }
         }
 
         if (!isValid) {
             requireContext().vibrate()
-            // Create a user-friendly error message
-//            val errorMessage = buildString {
-//                append("Mohon lengkapi data berikut:\n\n")
-//                missingFields.forEachIndexed { index, field ->
-//                    append("${index + 1}. $field")
-//                    if (index < missingFields.size - 1) append("\n")
-//                }
-//            }
-
             AlertDialogUtility.withSingleAction(
                 requireContext(),
-                "Kembali",
-                "Data Belum Lengkap!",
-                "Mohon Lengkapi Data yang belum diisi!",
+                stringXML(R.string.al_back),
+                stringXML(R.string.al_data_not_completed),
+                "${stringXML(R.string.al_pls_complete_data)}",
                 "warning.json",
                 R.color.colorRedDark
-            ) {
-                // Optional: Scroll to first error or highlight fields
-            }
+            ) {}
         }
 
+        Log.d("Validation", "Final validation result: $isValid")
         return isValid
     }
 
-    private fun updateTextInPertanyaanSpinner(
-        layoutBinding: PertanyaanSpinnerLayoutBinding,
-        newText: String
-    ) {
-        layoutBinding.tvPanenTBS.text = newText // Directly use the binding reference
+    private fun updateTextInPertanyaan(layoutBinding: PertanyaanSpinnerLayoutBinding, text: String) {
+        layoutBinding.tvPanenTBS.text = text
     }
 
     private fun showSnackbar(message: String) {
@@ -265,7 +356,7 @@ class HomeFragment : Fragment() {
                 android.Manifest.permission.ACCESS_FINE_LOCATION
             )
         ) {
-            showSnackbar("Location permission is required for this app. Change in Settings App")
+            showSnackbar(stringXML(R.string.location_permission_message))
             isPermissionRationaleShown = true
         } else {
             requestPermissionLauncher.launch(android.Manifest.permission.ACCESS_FINE_LOCATION)

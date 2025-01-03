@@ -27,6 +27,8 @@ class TPHAdapter : RecyclerView.Adapter<TPHAdapter.TPHViewHolder>() {
 
     class TPHViewHolder(private val binding: TableItemRowBinding) : RecyclerView.ViewHolder(binding.root) {
         fun bind(data: Map<String, Any>, isSelected: Boolean,archiveState: Int, onCheckedChange: (Boolean) -> Unit) {
+
+
             // Format date to Indonesia style
             val dateStr = data[KEY_TANGGAL] as String
             val formatter = SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.getDefault())
@@ -44,7 +46,8 @@ class TPHAdapter : RecyclerView.Adapter<TPHAdapter.TPHViewHolder>() {
 
             if (archiveState == 1) {
                 binding.checkBoxPanen.visibility = View.GONE
-
+                binding.numListTerupload.visibility = View.VISIBLE
+                binding.numListTerupload.text = "${position + 1}."
             } else {
                 binding.checkBoxPanen.visibility = View.VISIBLE
                 binding.checkBoxPanen.isChecked = isSelected

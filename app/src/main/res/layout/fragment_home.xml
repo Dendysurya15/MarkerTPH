@@ -5,6 +5,7 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:background="@color/blueLight"
+    android:windowSoftInputMode="adjustPan"
     tools:context=".ui.view.ui.home.HomeFragment">
 
 
@@ -135,6 +136,10 @@
                     android:layout_gravity="left"
                     android:orientation="vertical"
                     tools:ignore="RtlHardcoded">
+
+                    <include
+                        layout="@layout/pertanyaan_spinner_layout"
+                        android:id="@+id/layoutUserInput"/>
 
                     <include
                         layout="@layout/pertanyaan_spinner_layout"

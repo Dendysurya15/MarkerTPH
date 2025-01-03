@@ -6,6 +6,7 @@ import androidx.room.Ignore
 data class TPHModel(
     @Ignore val id: Int,
     val tanggal: String,
+    val user_input: String,
     val estate: String,
     val id_estate: Int,
     val afdeling: String,

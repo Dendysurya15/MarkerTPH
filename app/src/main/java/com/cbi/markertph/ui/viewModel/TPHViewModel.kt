@@ -45,6 +45,7 @@ class TPHViewModel(application: Application, private val repository: TPHReposito
     fun insertPanenTBSVM(
         id: Int? = 0,
         tanggal: String,
+        user_input: String,
         estate: String,
         id_estate: Int,
         afdeling: String,
@@ -63,6 +64,7 @@ class TPHViewModel(application: Application, private val repository: TPHReposito
                 val data = TPHModel(
                     id!!,
                     tanggal,
+                    user_input,
                     estate,
                     id_estate,
                     afdeling,

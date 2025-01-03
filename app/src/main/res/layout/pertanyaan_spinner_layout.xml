@@ -4,7 +4,7 @@
     android:layout_height="wrap_content"
     android:orientation="horizontal"
     android:gravity="center"
-android:layout_marginTop="10dp"
+    android:layout_marginTop="10dp"
     android:id="@+id/parentSpPanenTBS"
     xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto">
@@ -36,6 +36,7 @@ android:layout_marginTop="10dp"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 app:ms_text_color="@color/black"
+                android:visibility="visible"
                 app:ms_hint="Pilih Kategori Yang Sesuai" />
 
 
@@ -50,13 +51,26 @@ android:layout_marginTop="10dp"
                 app:ms_text_color="@color/black"
                 />
 
+            <EditText
+                android:id="@+id/etPanenTBS"
+                android:visibility="gone"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:background="@color/white"
+                android:imeOptions="actionDone"
+                android:singleLine="true"
+                android:maxLines="1"
+                android:inputType="text"
+                android:padding="16dp"
+                android:textSize="15dp" />
+
         </com.google.android.material.card.MaterialCardView>
 
         <TextView
             android:id="@+id/tvError"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="Pilihan harus diisi!"
+            android:text="Jawaban harus diisi!"
             android:textColor="@color/colorRedDark"
             android:visibility="gone"
             android:layout_marginTop="5dp"

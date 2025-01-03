@@ -5,6 +5,7 @@ import com.google.gson.annotations.SerializedName
 data class UploadData(
     @SerializedName("id") val id: Int,
     @SerializedName("datetime") val datetime: String,
+    @SerializedName("user_input") val user_input: String,
     @SerializedName("estate") val estate: String?,
     @SerializedName("afdeling") val afdeling: String?,
     @SerializedName("blok") val blok: String?,
