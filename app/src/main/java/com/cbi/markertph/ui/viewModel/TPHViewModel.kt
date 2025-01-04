@@ -2,6 +2,7 @@ package com.cbi.markertph.ui.viewModel
 
 import android.app.Application
 import android.content.Context
+import android.util.Log
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
@@ -9,6 +10,11 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import com.cbi.markertph.data.database.DatabaseHelper.Companion.KEY_ID
+import com.cbi.markertph.data.model.BUnitCodeModel
+import com.cbi.markertph.data.model.CompanyCodeModel
+import com.cbi.markertph.data.model.DivisionCodeModel
+import com.cbi.markertph.data.model.FieldCodeModel
+import com.cbi.markertph.data.model.KoordinatTPHModel
 import com.cbi.markertph.data.model.TPHModel
 import com.cbi.markertph.data.model.UploadData
 import com.cbi.markertph.data.model.UploadResponse
@@ -23,9 +29,10 @@ class TPHViewModel(application: Application, private val repository: TPHReposito
     val insertDBTPH: LiveData<Boolean> get() = _insertDBTPH
 
 
-    private val _dataTPHAll = MutableLiveData<List<TPHModel>>()
-    val dataTPHAll: LiveData<List<TPHModel>> get() = _dataTPHAll
-
+    private val _dataTPHAll = MutableLiveData<List<KoordinatTPHModel>>()
+    val dataTPHAll: LiveData<List<KoordinatTPHModel>> get() = _dataTPHAll
+    private val _insertStatus = MutableLiveData<Boolean>()
+    val insertStatus: LiveData<Boolean> = _insertStatus
 
     private val _deleteItemsResult = MutableLiveData<Boolean>()
     val deleteItemsResult: LiveData<Boolean> = _deleteItemsResult
@@ -40,6 +47,83 @@ class TPHViewModel(application: Application, private val repository: TPHReposito
     // Change from List<UploadResponse> to single UploadResponse
     fun uploadData(context: Context, dataList: List<UploadData>): LiveData<Result<UploadResponse>> {
         return repository.uploadDataServer(context, dataList)
+    }
+
+    fun getCompanyCodeCount(): Int {
+        return repository.getCompanyCodeCount()
+    }
+
+    fun getBUnitCodeCount(): Int {
+        return repository.getBUnitCodeCount()
+    }
+
+    fun getDivisionCodeCount(): Int {
+        return repository.getDivisionCodeCount()
+    }
+
+    fun getFieldCodeCount(): Int {
+        return repository.getFieldCodeCount()
+    }
+
+    fun getTPHCount(): Int {
+        return repository.getTPHCount()
+    }
+
+
+    fun insertCompanyCode(companyCodeModel: CompanyCodeModel) {
+        viewModelScope.launch {
+            try {
+                val isInserted = repository.insertCompanyCodeRepo(companyCodeModel)
+                // You can update LiveData here if needed
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
+        }
+    }
+
+    fun insertBUnitCode(bUnitCodeModel: BUnitCodeModel) {
+        viewModelScope.launch {
+            try {
+                val isInserted = repository.insertBUnitCodeRepo(bUnitCodeModel)
+                // You can update LiveData here if needed
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
+        }
+    }
+
+    fun insertDivisionCode(divisionCodeModel: DivisionCodeModel) {
+        viewModelScope.launch {
+            try {
+                val isInserted = repository.insertDivisionCodeRepo(divisionCodeModel)
+                // You can update LiveData here if needed
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
+        }
+    }
+
+    fun insertFieldCode(fieldCodeModel: FieldCodeModel) {
+        viewModelScope.launch {
+            try {
+                val isInserted = repository.insertFieldCodeRepo(fieldCodeModel)
+                // You can update LiveData here if needed
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
+        }
+    }
+
+    fun insertTPHBatch(tphList: List<TPHModel>) {
+        viewModelScope.launch {
+            try {
+                Log.d("TPHViewModel", "Starting batch insertion of ${tphList.size} records")
+                val isInserted = repository.insertTPHBatch(tphList)
+                Log.d("TPHViewModel", "Batch insertion completed: $isInserted")
+            } catch (e: Exception) {
+                Log.e("TPHViewModel", "Error during batch insertion", e)
+            }
+        }
     }
 
     fun insertPanenTBSVM(
@@ -61,7 +145,7 @@ class TPHViewModel(application: Application, private val repository: TPHReposito
         viewModelScope.launch {
             try {
 
-                val data = TPHModel(
+                val data = KoordinatTPHModel(
                     id!!,
                     tanggal,
                     user_input,
@@ -80,7 +164,7 @@ class TPHViewModel(application: Application, private val repository: TPHReposito
                 )
 
                 // Insert data into the repository
-                val isInserted = repository.insertTPHRepo(data)
+                val isInserted = repository.insertKoordinatTPHRepo(data)
 
                 // Update LiveData
                 _insertDBTPH.postValue(isInserted)

@@ -55,6 +55,7 @@
 <!--    setting-->
     <string name="location_permission_message">Izin lokasi diperlukan untuk aplikasi ini. Ubah di Pengaturan Aplikasi.</string>
     <string name="location_permission_denied">Izin lokasi ditolak.</string>
+    <string name="fetching_data">Sedang mengunduh data</string>
 
 <!--version app-->
 
