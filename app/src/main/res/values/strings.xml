@@ -50,6 +50,7 @@
     <string name="field_estate">Estate</string>
     <string name="field_afdeling">Afdeling</string>
     <string name="field_blok">Blok</string>
+    <string name="field_ancak">Ancak</string>
     <string name="field_tph">TPH</string>
 
 <!--    setting-->

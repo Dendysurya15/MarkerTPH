@@ -70,6 +70,42 @@ class TPHViewModel(application: Application, private val repository: TPHReposito
     }
 
 
+    fun getAllBUnitCodes(): LiveData<List<BUnitCodeModel>> {
+        val bUnitCodesLiveData = MutableLiveData<List<BUnitCodeModel>>()
+        viewModelScope.launch(Dispatchers.IO) {
+            val bUnitCodes = repository.getAllBUnitCodes()
+            bUnitCodesLiveData.postValue(bUnitCodes)
+        }
+        return bUnitCodesLiveData
+    }
+
+    fun getDivisionCodesByBUnitCode(bUnitCode: Int): LiveData<List<DivisionCodeModel>> {
+        val divisionCodesLiveData = MutableLiveData<List<DivisionCodeModel>>()
+        viewModelScope.launch(Dispatchers.IO) {
+            val divisions = repository.getDivisionCodesByBUnitCode(bUnitCode)
+            divisionCodesLiveData.postValue(divisions)
+        }
+        return divisionCodesLiveData
+    }
+
+    fun getFieldCodesByBUnitAndDivision(bUnitCode: Int, divisionCode: Int): LiveData<List<FieldCodeModel>> {
+        val fieldCodesLiveData = MutableLiveData<List<FieldCodeModel>>()
+        viewModelScope.launch(Dispatchers.IO) {
+            val fields = repository.getFieldCodesByBUnitAndDivision(bUnitCode, divisionCode)
+            fieldCodesLiveData.postValue(fields)
+        }
+        return fieldCodesLiveData
+    }
+
+    fun getAncakByFieldCode(bUnitCode: Int, divisionCode: Int, fieldCode: Int): LiveData<List<TPHModel>> {
+        val tphLiveData = MutableLiveData<List<TPHModel>>()
+        viewModelScope.launch(Dispatchers.IO) {
+            val tphList = repository.getAncakByFieldCode(bUnitCode, divisionCode, fieldCode)
+            tphLiveData.postValue(tphList)
+        }
+        return tphLiveData
+    }
+
     fun insertCompanyCode(companyCodeModel: CompanyCodeModel) {
         viewModelScope.launch {
             try {

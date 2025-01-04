@@ -187,6 +187,191 @@ class TPHRepository(context: Context) {
         }
     }
 
+
+    fun getAllBUnitCodes(): List<BUnitCodeModel> {
+        val db = databaseHelper.readableDatabase
+        val bUnitCodes = mutableListOf<BUnitCodeModel>()
+
+        val cursor = db.query(
+            DatabaseHelper.DB_TABLE_BUNIT_CODE,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null
+        )
+
+        cursor.use {
+            while (it.moveToNext()) {
+                val bUnitCode = BUnitCodeModel(
+                    BUnitCode = it.getInt(it.getColumnIndexOrThrow(DatabaseHelper.KEY_BUNIT_CODE)),
+                    BUnitName = it.getString(it.getColumnIndexOrThrow(DatabaseHelper.KEY_BUNIT_NAME)),
+                    CompanyCode = it.getInt(it.getColumnIndexOrThrow(DatabaseHelper.KEY_COMPANY_CODE))
+                )
+                bUnitCodes.add(bUnitCode)
+            }
+        }
+        return bUnitCodes
+    }
+
+    fun getDivisionCodesByBUnitCode(bUnitCode: Int): List<DivisionCodeModel> {
+        val db = databaseHelper.readableDatabase
+        val divisions = mutableListOf<DivisionCodeModel>()
+
+        val query = """
+    SELECT * FROM ${DatabaseHelper.DB_TABLE_DIVISION_CODE}
+    WHERE ${DatabaseHelper.KEY_BUNIT_CODE} = ?
+    """
+
+        val cursor = db.rawQuery(query, arrayOf(bUnitCode.toString()))
+        cursor.use {
+            while (it.moveToNext()) {
+                val division = DivisionCodeModel(
+                    DivisionCode = it.getInt(it.getColumnIndexOrThrow(DatabaseHelper.KEY_DIVISION_CODE)),
+                    DivisionName = it.getString(it.getColumnIndexOrThrow(DatabaseHelper.KEY_DIVISION_NAME)),
+                    BUnitCode = it.getInt(it.getColumnIndexOrThrow(DatabaseHelper.KEY_BUNIT_CODE))
+                )
+                divisions.add(division)
+            }
+        }
+        return divisions
+    }
+
+    fun getFieldCodesByBUnitAndDivision(bUnitCode: Int, divisionCode: Int): List<FieldCodeModel> {
+        val db = databaseHelper.readableDatabase
+        val fields = mutableListOf<FieldCodeModel>()
+
+        val query = """
+    SELECT * FROM ${DatabaseHelper.DB_TABLE_FIELD_CODE}
+    WHERE ${DatabaseHelper.KEY_BUNIT_CODE} = ? 
+    AND ${DatabaseHelper.KEY_DIVISION_CODE} = ?
+"""
+
+        val cursor = db.rawQuery(query, arrayOf(bUnitCode.toString(), divisionCode.toString()))
+        cursor.use {
+            while (it.moveToNext()) {
+                try {
+                    val field = FieldCodeModel(
+                        FieldCode = it.getInt(it.getColumnIndexOrThrow(DatabaseHelper.KEY_FIELD_CODE)),
+                        BUnitCode = it.getInt(it.getColumnIndexOrThrow(DatabaseHelper.KEY_BUNIT_CODE)),
+                        DivisionCode = it.getInt(it.getColumnIndexOrThrow(DatabaseHelper.KEY_DIVISION_CODE)),
+                        FieldName = it.getString(it.getColumnIndexOrThrow(DatabaseHelper.KEY_FIELD_NAME)) ?: "",
+                        FieldNumber = it.getString(it.getColumnIndexOrThrow(DatabaseHelper.KEY_FIELD_NUMBER)) ?: "",
+                        FieldLandArea = try {
+                            it.getDouble(it.getColumnIndexOrThrow(DatabaseHelper.KEY_FIELD_LAND_AREA))
+                        } catch (e: Exception) {
+                            0.0 // Default value if conversion fails
+                        },
+                        PlantingYear = it.getInt(it.getColumnIndexOrThrow(DatabaseHelper.KEY_PLANTING_YEAR)),
+                        IntialNoOfPlants = it.getInt(it.getColumnIndexOrThrow(DatabaseHelper.KEY_INITIAL_NO_OF_PLANTS)),
+                        PlantsPerHectare = it.getInt(it.getColumnIndexOrThrow(DatabaseHelper.KEY_PLANTS_PER_HECTARE)),
+                        isMatured = it.getString(it.getColumnIndexOrThrow(DatabaseHelper.KEY_IS_MATURED)) ?: "N"
+                    )
+                    fields.add(field)
+                } catch (e: Exception) {
+                    Log.e("TPHRepository", "Error reading field data: ${e.message}")
+                    // Continue to next record if one fails
+                    continue
+                }
+            }
+        }
+        return fields
+    }
+
+    fun getAncakByFieldCode(bUnitCode: Int, divisionCode: Int, fieldCode: Int): List<TPHModel> {
+        val db = databaseHelper.readableDatabase
+        val dataList = mutableListOf<TPHModel>()
+
+        val query = """
+        SELECT * FROM ${DatabaseHelper.DB_TABLE_TPH}
+        WHERE ${DatabaseHelper.KEY_BUNIT_CODE} = ? 
+        AND ${DatabaseHelper.KEY_DIVISION_CODE} = ? 
+        AND ${DatabaseHelper.KEY_FIELD_CODE} = ?
+    """
+
+        val cursor = db.rawQuery(query, arrayOf(bUnitCode.toString(), divisionCode.toString(), fieldCode.toString()))
+        cursor.use {
+            while (it.moveToNext()) {
+                try {
+                    val data = TPHModel(
+                        id = try {
+                            it.getInt(it.getColumnIndexOrThrow(DatabaseHelper.KEY_ID))
+                        } catch (e: Exception) {
+                            Log.e("TPHRepository", "Error getting ID: ${e.message}")
+                            0 // Default value
+                        },
+                        CompanyCode = try {
+                            it.getInt(it.getColumnIndexOrThrow(DatabaseHelper.KEY_COMPANY_CODE))
+                        } catch (e: Exception) {
+                            Log.e("TPHRepository", "Error getting CompanyCode: ${e.message}")
+                            0
+                        },
+                        Regional = try {
+                            it.getInt(it.getColumnIndexOrThrow(DatabaseHelper.KEY_REGIONAL))
+                        } catch (e: Exception) {
+                            Log.e("TPHRepository", "Error getting Regional: ${e.message}")
+                            0
+                        },
+                        BUnitCode = try {
+                            it.getInt(it.getColumnIndexOrThrow(DatabaseHelper.KEY_BUNIT_CODE))
+                        } catch (e: Exception) {
+                            Log.e("TPHRepository", "Error getting BUnitCode: ${e.message}")
+                            bUnitCode // Use the parameter as fallback
+                        },
+                        DivisionCode = try {
+                            it.getInt(it.getColumnIndexOrThrow(DatabaseHelper.KEY_DIVISION_CODE))
+                        } catch (e: Exception) {
+                            Log.e("TPHRepository", "Error getting DivisionCode: ${e.message}")
+                            divisionCode // Use the parameter as fallback
+                        },
+                        FieldCode = try {
+                            it.getInt(it.getColumnIndexOrThrow(DatabaseHelper.KEY_FIELD_CODE))
+                        } catch (e: Exception) {
+                            Log.e("TPHRepository", "Error getting FieldCode: ${e.message}")
+                            fieldCode // Use the parameter as fallback
+                        },
+                        planting_year = try {
+                            it.getInt(it.getColumnIndexOrThrow(DatabaseHelper.KEY_PLANTING_YEAR_TPH))
+                        } catch (e: Exception) {
+                            Log.e("TPHRepository", "Error getting planting_year: ${e.message}")
+                            0
+                        },
+                        ancak = try {
+                            it.getInt(it.getColumnIndexOrThrow(DatabaseHelper.KEY_ANCAK))
+                        } catch (e: Exception) {
+                            Log.e("TPHRepository", "Error getting ancak: ${e.message}")
+                            0
+                        },
+                        tph = try {
+                            it.getString(it.getColumnIndexOrThrow(DatabaseHelper.KEY_TPH)) ?: ""
+                        } catch (e: Exception) {
+                            Log.e("TPHRepository", "Error getting tph: ${e.message}")
+                            ""
+                        }
+                    )
+
+                    // Additional validation before adding to list
+                    if (data.id != 0 && data.BUnitCode != 0 && data.DivisionCode != 0 && data.FieldCode != 0) {
+                        dataList.add(data)
+                    } else {
+                        Log.w("TPHRepository", "Skipping invalid TPH record: $data")
+                    }
+
+                } catch (e: Exception) {
+                    Log.e("TPHRepository", "Error creating TPH model: ${e.message}")
+                    continue
+                }
+            }
+        }
+
+        if (dataList.isEmpty()) {
+            Log.w("TPHRepository", "No TPH records found for BUnit: $bUnitCode, Division: $divisionCode, Field: $fieldCode")
+        }
+
+        return dataList
+    }
+
     fun insertKoordinatTPHRepo(data: KoordinatTPHModel): Boolean {
         val db = databaseHelper.writableDatabase
         val values = ContentValues().apply {

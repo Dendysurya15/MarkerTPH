@@ -155,6 +155,10 @@
 
                     <include
                         layout="@layout/pertanyaan_spinner_layout"
+                        android:id="@+id/layoutAncak"/>
+
+                    <include
+                        layout="@layout/pertanyaan_spinner_layout"
                         android:id="@+id/layoutTPH"/>
 
                     <com.google.android.material.button.MaterialButton
