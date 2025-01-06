@@ -43,6 +43,22 @@ class TPHViewModel(application: Application, private val repository: TPHReposito
     private val _resultCountDataNonArchive = MutableLiveData<Int>()
     val resultCountDataNonArchive: LiveData<Int> = _resultCountDataNonArchive
 
+    private val _tphDataList = MutableLiveData<List<String>>()
+    val tphDataList: LiveData<List<String>> get() = _tphDataList
+
+    fun updateTPHData(newData: List<String>) {
+        _tphDataList.value = newData
+    }
+
+    // Example method to trigger the LiveData update (replace this with your logic)
+    fun fetchTPHData() {
+        val hardcodedTPHValues = listOf(
+            1, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 2, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 3,
+            30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 4, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 5, 50,
+            51, 52, 53, 54, 55, 56, 57, 58, 59, 6, 60, 61, 62, 63, 7, 8, 9
+        )
+        _tphDataList.value = hardcodedTPHValues.map { it.toString() }
+    }
 
     // Change from List<UploadResponse> to single UploadResponse
     fun uploadData(context: Context, dataList: List<UploadData>): LiveData<Result<UploadResponse>> {
@@ -101,6 +117,15 @@ class TPHViewModel(application: Application, private val repository: TPHReposito
         val tphLiveData = MutableLiveData<List<TPHModel>>()
         viewModelScope.launch(Dispatchers.IO) {
             val tphList = repository.getAncakByFieldCode(bUnitCode, divisionCode, fieldCode)
+            tphLiveData.postValue(tphList)
+        }
+        return tphLiveData
+    }
+
+    fun getTPHByAncakNumbers(bUnitCode: Int, divisionCode: Int, fieldCode: Int, tphIds: List<Int>): LiveData<List<TPHModel>> {
+        val tphLiveData = MutableLiveData<List<TPHModel>>()
+        viewModelScope.launch(Dispatchers.IO) {
+            val tphList = repository.getTPHByAncakNumbers(bUnitCode, divisionCode, fieldCode, tphIds)
             tphLiveData.postValue(tphList)
         }
         return tphLiveData
@@ -172,11 +197,13 @@ class TPHViewModel(application: Application, private val repository: TPHReposito
         id_afdeling: Int,
         blok: String,
         id_blok: Int,
+        ancak: String,
+        id_ancak: Int,
         tph: String,
         id_tph: Int,
         latitude: String,
         longitude: String,
-        app_version:String
+        app_version: String
     ) {
         viewModelScope.launch {
             try {
@@ -191,6 +218,8 @@ class TPHViewModel(application: Application, private val repository: TPHReposito
                     id_afdeling,
                     blok,
                     id_blok,
+                    ancak,
+                    id_ancak,
                     tph,
                     id_tph,
                     latitude,
@@ -198,6 +227,7 @@ class TPHViewModel(application: Application, private val repository: TPHReposito
                     0,
                     app_version
                 )
+
 
                 // Insert data into the repository
                 val isInserted = repository.insertKoordinatTPHRepo(data)

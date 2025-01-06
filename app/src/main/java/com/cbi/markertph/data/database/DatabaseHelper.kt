@@ -31,6 +31,8 @@ class DatabaseHelper(context: Context):
         val KEY_BLOK_ID = "id_blok"
         val KEY_TPH = "tph"
         val KEY_TPH_ID = "id_tph"
+        val KEY_ANCAK = "ancak"
+        val KEY_ANCAK_ID = "id_ancak"
         val KEY_LAT = "latitude"
         val KEY_LON = "longitude"
         val KEY_APP_VERSION = "app_version"
@@ -60,7 +62,7 @@ class DatabaseHelper(context: Context):
 //        TPH
         val KEY_REGIONAL = "Regional"
         val KEY_PLANTING_YEAR_TPH = "planting_year"
-        val KEY_ANCAK = "ancak"
+
     }
 
     private val createTableCompanyCode = """
@@ -127,6 +129,8 @@ class DatabaseHelper(context: Context):
            $KEY_AFDELING_ID INTEGER,
            $KEY_BLOK VARCHAR,
             $KEY_BLOK_ID INTEGER,
+            $KEY_ANCAK VARCHAR,
+            $KEY_ANCAK_ID INTEGER,
            $KEY_TPH VARCHAR,
            $KEY_TPH_ID INTEGER,
             $KEY_LAT VARCHAR,

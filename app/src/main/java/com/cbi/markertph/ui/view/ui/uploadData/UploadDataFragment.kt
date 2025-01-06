@@ -19,6 +19,8 @@ import androidx.recyclerview.widget.LinearLayoutManager
 import com.cbi.markertph.R
 import com.cbi.markertph.data.database.DatabaseHelper.Companion.KEY_AFDELING
 import com.cbi.markertph.data.database.DatabaseHelper.Companion.KEY_AFDELING_ID
+import com.cbi.markertph.data.database.DatabaseHelper.Companion.KEY_ANCAK
+import com.cbi.markertph.data.database.DatabaseHelper.Companion.KEY_ANCAK_ID
 import com.cbi.markertph.data.database.DatabaseHelper.Companion.KEY_APP_VERSION
 import com.cbi.markertph.data.database.DatabaseHelper.Companion.KEY_BLOK
 import com.cbi.markertph.data.database.DatabaseHelper.Companion.KEY_BLOK_ID
@@ -173,6 +175,7 @@ class UploadDataFragment : Fragment() {
                     user_input = it["user_input"] as String,
                     afdeling = it["afdeling"] as String,
                     blok = it["blok"] as String,
+                    ancak = it["ancak"] as String,
                     tph = it["tph"] as String,
                     lat = it["latitude"] as String,
                     lon = it["longitude"] as String,
@@ -413,15 +416,6 @@ class UploadDataFragment : Fragment() {
         }
     }
 
-//    private fun setupRecyclerView() {
-//        tphAdapter = TPHAdapter()
-//        binding.rvTableData.apply {
-//            layoutManager = LinearLayoutManager(context)
-//            adapter = tphAdapter
-//            setHasFixedSize(true)
-//        }
-//    }
-
     private fun setupRecyclerView() {
         tphAdapter = TPHAdapter()
         binding.rvTableData.apply {
@@ -487,6 +481,8 @@ class UploadDataFragment : Fragment() {
                         recordMap[KEY_AFDELING_ID] = safeRecord.id_afdeling ?: 0
                         recordMap[KEY_BLOK] = safeRecord.blok ?: ""
                         recordMap[KEY_BLOK_ID] = safeRecord.id_blok ?: 0
+                        recordMap[KEY_ANCAK] = safeRecord.ancak ?: ""
+                        recordMap[KEY_ANCAK_ID] = safeRecord.id_ancak ?: 0
                         recordMap[KEY_TPH] = safeRecord.tph ?: ""
                         recordMap[KEY_TPH_ID] = safeRecord.id_tph ?: 0
                         recordMap[KEY_LAT] = safeRecord.latitude ?: ""

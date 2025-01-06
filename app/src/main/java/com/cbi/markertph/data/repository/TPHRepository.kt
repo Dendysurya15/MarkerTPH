@@ -18,6 +18,8 @@ import com.cbi.markertph.data.database.DatabaseHelper.Companion.DB_TABLE_KOORDIN
 import com.cbi.markertph.data.database.DatabaseHelper.Companion.DB_TABLE_TPH
 import com.cbi.markertph.data.database.DatabaseHelper.Companion.KEY_AFDELING
 import com.cbi.markertph.data.database.DatabaseHelper.Companion.KEY_AFDELING_ID
+import com.cbi.markertph.data.database.DatabaseHelper.Companion.KEY_ANCAK
+import com.cbi.markertph.data.database.DatabaseHelper.Companion.KEY_ANCAK_ID
 import com.cbi.markertph.data.database.DatabaseHelper.Companion.KEY_APP_VERSION
 import com.cbi.markertph.data.database.DatabaseHelper.Companion.KEY_BLOK
 import com.cbi.markertph.data.database.DatabaseHelper.Companion.KEY_BLOK_ID
@@ -372,6 +374,53 @@ class TPHRepository(context: Context) {
         return dataList
     }
 
+    // In your Repository
+    fun getTPHByAncakNumbers(bUnitCode: Int, divisionCode: Int, fieldCode: Int, tphIds: List<Int>): List<TPHModel> {
+        val db = databaseHelper.readableDatabase
+        val dataList = mutableListOf<TPHModel>()
+
+        val placeholders = tphIds.joinToString(",") { "?" }  // Create placeholders for the IN clause
+        val query = """
+        SELECT * FROM ${DatabaseHelper.DB_TABLE_TPH}
+        WHERE ${DatabaseHelper.KEY_BUNIT_CODE} = ? 
+        AND ${DatabaseHelper.KEY_DIVISION_CODE} = ? 
+        AND ${DatabaseHelper.KEY_FIELD_CODE} = ?
+        AND ${DatabaseHelper.KEY_ID} IN ($placeholders)
+        ORDER BY ${DatabaseHelper.KEY_TPH} ASC
+    """
+
+        val cursor = db.rawQuery(query, arrayOf(
+            bUnitCode.toString(),
+            divisionCode.toString(),
+            fieldCode.toString(),
+            *tphIds.map { it.toString() }.toTypedArray()  // Add the tphIds to the query parameters
+        ))
+
+        cursor.use {
+            while (it.moveToNext()) {
+                try {
+                    val tph = TPHModel(
+                        id = it.getInt(it.getColumnIndexOrThrow(DatabaseHelper.KEY_ID)),
+                        CompanyCode = it.getInt(it.getColumnIndexOrThrow(DatabaseHelper.KEY_COMPANY_CODE)),
+                        Regional = it.getInt(it.getColumnIndexOrThrow(DatabaseHelper.KEY_REGIONAL)),
+                        BUnitCode = it.getInt(it.getColumnIndexOrThrow(DatabaseHelper.KEY_BUNIT_CODE)),
+                        DivisionCode = it.getInt(it.getColumnIndexOrThrow(DatabaseHelper.KEY_DIVISION_CODE)),
+                        FieldCode = it.getInt(it.getColumnIndexOrThrow(DatabaseHelper.KEY_FIELD_CODE)),
+                        planting_year = it.getInt(it.getColumnIndexOrThrow(DatabaseHelper.KEY_PLANTING_YEAR_TPH)),
+                        ancak = it.getInt(it.getColumnIndexOrThrow(DatabaseHelper.KEY_ANCAK)),
+                        tph = it.getString(it.getColumnIndexOrThrow(DatabaseHelper.KEY_TPH))
+                    )
+                    dataList.add(tph)
+                } catch (e: Exception) {
+                    Log.e("TPHRepository", "Error reading TPH data: ${e.message}")
+                    continue
+                }
+            }
+        }
+        return dataList
+    }
+
+
     fun insertKoordinatTPHRepo(data: KoordinatTPHModel): Boolean {
         val db = databaseHelper.writableDatabase
         val values = ContentValues().apply {
@@ -383,6 +432,8 @@ class TPHRepository(context: Context) {
             put(DatabaseHelper.KEY_AFDELING_ID, data.id_afdeling)
             put(DatabaseHelper.KEY_BLOK, data.blok)
             put(DatabaseHelper.KEY_BLOK_ID, data.id_blok)
+            put(DatabaseHelper.KEY_ANCAK, data.ancak)
+            put(DatabaseHelper.KEY_ANCAK_ID, data.id_ancak)
             put(DatabaseHelper.KEY_TPH, data.tph)
             put(DatabaseHelper.KEY_TPH_ID, data.id_tph)
             put(DatabaseHelper.KEY_LAT, data.latitude)
@@ -392,8 +443,6 @@ class TPHRepository(context: Context) {
         }
 
         val rowsAffected = db.insert(DatabaseHelper.DB_TABLE_KOORDINAT_TPH, null, values)
-//        db.close()
-
         return rowsAffected > 0
     }
 
@@ -416,6 +465,8 @@ class TPHRepository(context: Context) {
                     id_afdeling = it.getInt(it.getColumnIndexOrThrow(KEY_AFDELING_ID)),
                     blok = it.getString(it.getColumnIndexOrThrow(KEY_BLOK)) ?: "",
                     id_blok = it.getInt(it.getColumnIndexOrThrow(KEY_BLOK_ID)),
+                    ancak = it.getString(it.getColumnIndexOrThrow(KEY_ANCAK)) ?: "",
+                    id_ancak = it.getInt(it.getColumnIndexOrThrow(KEY_ANCAK_ID)),
                     tph = it.getString(it.getColumnIndexOrThrow(KEY_TPH)) ?: "",
                     id_tph = it.getInt(it.getColumnIndexOrThrow(KEY_TPH_ID)),
                     latitude = it.getString(it.getColumnIndexOrThrow(KEY_LAT)) ?: "",
@@ -559,6 +610,7 @@ class TPHRepository(context: Context) {
                                                             map["user_input"] == data.user_input &&
                                                     map["estate"] == data.estate &&
                                                     map["afdeling"] == data.afdeling &&
+                                                            map["ancak"] == data.ancak &&
                                                     map["blok"] == data.blok &&
                                                     map["tph"] == data.tph
                                                 } ?: false

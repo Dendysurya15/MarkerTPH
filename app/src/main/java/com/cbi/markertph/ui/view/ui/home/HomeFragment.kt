@@ -2,6 +2,7 @@ package com.cbi.markertph.ui.view.ui.home
 
 import android.annotation.SuppressLint
 import android.content.Context
+import android.content.Intent
 import android.content.res.ColorStateList
 import android.os.Build
 import android.os.Bundle
@@ -15,10 +16,13 @@ import android.view.View
 import android.view.ViewGroup
 import android.view.inputmethod.EditorInfo
 import android.view.inputmethod.InputMethodManager
+import android.widget.ArrayAdapter
 import android.widget.TextView
 import android.widget.Toast
+import androidx.activity.OnBackPressedCallback
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.core.app.ActivityCompat
+import androidx.core.app.ActivityCompat.finishAffinity
 import androidx.core.content.ContextCompat
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.ViewModelProvider
@@ -39,6 +43,7 @@ import com.cbi.markertph.utils.AppUtils.stringXML
 import com.cbi.markertph.utils.AppUtils.vibrate
 import com.google.android.material.button.MaterialButton
 import com.google.android.material.snackbar.Snackbar
+import com.jaredrummler.materialspinner.MaterialSpinner
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -59,22 +64,29 @@ class HomeFragment : Fragment() {
     private var selectedAfdeling: String = ""
     private var selectedBlok: String = ""
     private var selectedTPH: String = ""
+    private var selectedAncak: String = ""
 
     private var bUnitCodesList: List<BUnitCodeModel> = emptyList() // Add this variable to store the full list
     private var divisionCodesList: List<DivisionCodeModel> = emptyList() // Add this to store division codes
     private var fieldCodesList: List<FieldCodeModel> = emptyList() // Add this
     private var tphDataList: List<TPHModel> = emptyList() // Add this to store the full TPH data
-
+    private var filteredTPHList: List<TPHModel> = emptyList() // Add this to store the full TPH data
+    var tphNames: List<String> = emptyList()
 
     private var selectedBUnitCodeValue: Int? = null
     private var selectedDivisionCodeValue: Int? = null // Add this
     private var selectedFieldCodeValue: Int? = null // Add this
-    private var selectedAncakValue: Int? = null // Add this to store selected ancak
+    private var selectedAncakInt: Int? = null // Add this to store selected ancak
 
     enum class InputType {
         SPINNER,
         EDITTEXT
     }
+    private var savedBUnitCode: Int? = null
+    private var savedDivisionCode: Int? = null
+    private var savedFieldCode: Int? = null
+    private var savedAncak: String? = null
+    private var savedTPHIds: List<Int> = emptyList()
 
     private lateinit var inputMappings: List<Triple<PertanyaanSpinnerLayoutBinding, String, InputType>>
     private val requestPermissionLauncher =
@@ -90,9 +102,20 @@ class HomeFragment : Fragment() {
         inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?
     ): View {
         _binding = FragmentHomeBinding.inflate(inflater, container, false)
+
+
         initViewModel()
         setupLayout()
         setAppVersion()
+        Log.d("LIFECYCLE", "onCreateView")
+//        Log.d("testing",fieldCodesList.toString() )
+//        Log.d("testing",tphDataList.toString() )
+//
+//
+        Log.d("testing",selectedBUnitCodeValue.toString() )
+        Log.d("testing",selectedDivisionCodeValue.toString() )
+        Log.d("testing",selectedFieldCodeValue.toString() )
+
         val mbSaveDataTPH = binding.mbSaveDataTPH
         mbSaveDataTPH.setOnClickListener{
             if (validateAndShowErrors()) {
@@ -106,18 +129,18 @@ class HomeFragment : Fragment() {
 
                     val app_version = requireContext().getString(R.string.app_version)
                     tphViewModel.insertPanenTBSVM(
-                        tanggal = SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.getDefault()).format(
-                            Date()
-                        ),
+                        tanggal = SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.getDefault()).format(Date()),
                         user_input = userInput,
                         estate = selectedEstate,
-                        id_estate = 1,
+                        id_estate = selectedBUnitCodeValue ?: 0,
                         afdeling = selectedAfdeling,
-                        id_afdeling =2,
+                        id_afdeling = selectedDivisionCodeValue ?: 0,
                         blok = selectedBlok,
-                        id_blok = 3,
+                        id_blok = selectedFieldCodeValue ?: 0,
+                        ancak = selectedAncak,
+                        id_ancak = 0,
                         tph = selectedTPH,
-                        id_tph = 4,
+                        id_tph = 0,
                         latitude = lat.toString(),
                         longitude = lon.toString(),
                         app_version = app_version
@@ -131,6 +154,7 @@ class HomeFragment : Fragment() {
                                 stringXML(R.string.al_description_success_save_local),
                                 "success.json"
                                 ) {
+
                             }
                         }else{
                             AlertDialogUtility.alertDialogAction(
@@ -151,15 +175,22 @@ class HomeFragment : Fragment() {
 
                 }
 
-
             }else{
             }
         }
+
+        Log.d("testing","sdjkfkljdsf" )
+
+        requireActivity().onBackPressedDispatcher.addCallback(viewLifecycleOwner, object : OnBackPressedCallback(true) {
+            override fun handleOnBackPressed() {
+                showExitDialog()
+            }
+        })
+
         return binding.root
     }
 
 
-    // In HomeFragment
     private fun initViewModel() {
         tphViewModel = ViewModelProvider(
             this,
@@ -187,7 +218,7 @@ class HomeFragment : Fragment() {
             Triple(binding.layoutAfdeling, stringXML(R.string.field_afdeling), InputType.SPINNER),
             Triple(binding.layoutBlok, stringXML(R.string.field_blok), InputType.SPINNER),
             Triple(binding.layoutAncak, stringXML(R.string.field_ancak), InputType.SPINNER),
-             Triple(binding.layoutTPH, stringXML(R.string.field_tph), InputType.SPINNER)
+                    Triple(binding.layoutTPH, stringXML(R.string.field_tph), InputType.SPINNER)
         )
 
         // Initialize all spinners empty first
@@ -203,6 +234,9 @@ class HomeFragment : Fragment() {
             bUnitCodesList = bUnitCodes // Store the full list
             val estateNames = bUnitCodes.map { it.BUnitName }
             setupSpinnerView(binding.layoutEstate, estateNames)
+            setupSpinnerView(binding.layoutAfdeling, emptyList())
+            setupSpinnerView(binding.layoutBlok, emptyList())
+            setupSpinnerView(binding.layoutAncak, emptyList())
         }
     }
 
@@ -210,6 +244,7 @@ class HomeFragment : Fragment() {
         with(layoutBinding) {
             spPanenTBS.visibility = View.VISIBLE
             etPanenTBS.visibility = View.GONE
+
 
             spPanenTBS.setItems(data)
             spPanenTBS.setOnItemSelectedListener { _, position, _, item ->
@@ -221,6 +256,7 @@ class HomeFragment : Fragment() {
                         selectedEstate = item.toString()
                         val selectedBUnitCode = bUnitCodesList.find { it.BUnitName == selectedEstate }?.BUnitCode
                         selectedBUnitCodeValue = selectedBUnitCode
+                        savedBUnitCode = selectedBUnitCode  // Save state
                         selectedBUnitCode?.let { code ->
                             loadDivisionCodes(code)
                         }
@@ -229,6 +265,7 @@ class HomeFragment : Fragment() {
                         selectedAfdeling = item.toString()
                         val selectedDivisionCode = divisionCodesList.find { it.DivisionName == selectedAfdeling }?.DivisionCode
                         selectedDivisionCodeValue = selectedDivisionCode
+                        savedDivisionCode = selectedDivisionCode  // Save state
                         if (selectedBUnitCodeValue != null && selectedDivisionCode != null) {
                             loadFieldCodes(selectedBUnitCodeValue!!, selectedDivisionCode)
                         }
@@ -236,20 +273,79 @@ class HomeFragment : Fragment() {
                     stringXML(R.string.field_blok) -> {
                         selectedBlok = item.toString()
                         selectedFieldCodeValue = fieldCodesList.find { it.FieldName == selectedBlok }?.FieldCode
-
+                        savedFieldCode = selectedFieldCodeValue  // Save state
                         if (selectedBUnitCodeValue != null && selectedDivisionCodeValue != null && selectedFieldCodeValue != null) {
                             loadAncakData(selectedBUnitCodeValue!!, selectedDivisionCodeValue!!, selectedFieldCodeValue!!)
                         }
                     }
                     stringXML(R.string.field_ancak) -> {
-                        selectedAncakValue = item.toString().toIntOrNull()
-                        // Filter TPH data based on selected ancak
-                        selectedAncakValue?.let { ancak ->
-                            val tphForAncak = tphDataList.filter { it.ancak == ancak }
-                                .map { it.tph }
-                                .sorted()
-                            setupSpinnerView(binding.layoutTPH, tphForAncak)
+                        Log.d("TPH_LIFECYCLE", "Ancak selection started")
+                        selectedAncak = item.toString()
+                        Log.d("TPH_LIFECYCLE", "Selected Ancak: $selectedAncak")
+                        Log.d("TPH_LIFECYCLE", "TPH Data List size: ${tphDataList.size}")
+                        savedAncak = selectedAncak
+                        try {
+                            val filteredTPHList = tphDataList.filter {
+                                Log.d("TPH_LIFECYCLE", "Filtering TPH with ancak: ${it.ancak}")
+                                it.ancak.toString() == selectedAncak
+                            }
+                            Log.d("TPH_LIFECYCLE", "Filtered TPH List: $filteredTPHList")
+
+                            val tphIds = filteredTPHList.map { it.id }
+                            Log.d("TPH_LIFECYCLE", "TPH IDs for filtering: $tphIds")
+                            savedTPHIds = tphIds  // Save state
+                            if (selectedBUnitCodeValue == null || selectedDivisionCodeValue == null || selectedFieldCodeValue == null) {
+                                Log.e("TPH_LIFECYCLE", "Required values are null - bUnit: $selectedBUnitCodeValue, division: $selectedDivisionCodeValue, field: $selectedFieldCodeValue")
+                                return@setOnItemSelectedListener
+                            }
+
+                            if (tphIds.isNotEmpty()) {
+                                Log.d("TPH_LIFECYCLE", "Calling loadTPHData")
+                                loadTPHData(selectedBUnitCodeValue!!, selectedDivisionCodeValue!!, selectedFieldCodeValue!!, tphIds)
+                            } else {
+                                Log.e("TPH_LIFECYCLE", "No TPH IDs found for selected ancak")
+                            }
+                        } catch (e: Exception) {
+                            Log.e("TPH_LIFECYCLE", "Error in ancak selection", e)
+                            e.printStackTrace()
                         }
+                    }
+                    stringXML(R.string.field_tph) -> {
+//                        try {
+//                            if (filteredTPHList.isEmpty()) {
+//                                Log.d("TPH_DEBUG", "filteredTPHList is empty, reinitializing data...")
+//                                // If needed, reload your data here
+//                                if (selectedBUnitCodeValue != null && selectedDivisionCodeValue != null &&
+//                                    selectedFieldCodeValue != null && selectedAncak.isNotEmpty()) {
+//                                    loadAncakData(selectedBUnitCodeValue!!, selectedDivisionCodeValue!!, selectedFieldCodeValue!!)
+//                                }
+//                                return@setOnItemSelectedListener
+//                            }
+//
+//                            val selectedTempTPH = item.toString()
+                            selectedTPH = item.toString()
+
+                        Log.d("testing", selectedTPH.toString())
+                            // Safely find the TPH model
+//                            val selectedTPHModel = filteredTPHList.find {
+//                                it.tph.toString() == selectedTempTPH
+//                            }
+//
+//                            if (selectedTPHModel != null) {
+//                                selectedTPH = selectedTempTPH
+//                                Log.d("testing", "Selected TPH: $selectedTPH")
+//                                Log.d("testing", "Selected TPH Key: ${selectedTPHModel.id}")
+//                            } else {
+//                                Log.d("Error", "No matching TPHModel found for TPH: $selectedTempTPH")
+//                                // Reset the selection if needed
+//                                selectedTPH = ""
+//                            }
+//                        } catch (e: Exception) {
+//                            Log.e("TPH_ERROR", "Error in TPH selection: ${e.message}")
+//                            selectedTPH = ""
+//                            // Reset spinner if needed
+//
+//                        }
                     }
                 }
             }
@@ -264,6 +360,7 @@ class HomeFragment : Fragment() {
 
             setupSpinnerView(binding.layoutBlok, emptyList())
             setupSpinnerView(binding.layoutAncak, emptyList())
+
         }
     }
 
@@ -273,18 +370,51 @@ class HomeFragment : Fragment() {
             val fieldNames = fieldCodes.map { it.FieldName }
             setupSpinnerView(binding.layoutBlok, fieldNames)
             setupSpinnerView(binding.layoutAncak, emptyList()) // Clear TPH spinner
+            setupSpinnerView(binding.layoutTPH, emptyList()) // Clear TPH spinner
         }
     }
 
     private fun loadAncakData(bUnitCode: Int, divisionCode: Int, fieldCode: Int) {
         tphViewModel.getAncakByFieldCode(bUnitCode, divisionCode, fieldCode).observe(viewLifecycleOwner) { dataList ->
             tphDataList = dataList // Store the full list
-            val ancakList = dataList.map { it.ancak.toString() }.distinct().sorted()
+            val ancakList = dataList.map { it.ancak.toString() }.distinct()
+
             setupSpinnerView(binding.layoutAncak, ancakList)
-            // Clear the TPH spinner when ancak changes
-            setupSpinnerView(binding.layoutTPH, emptyList())
+            setupSpinnerView(binding.layoutTPH, emptyList()) // Clear TPH spinner
+
         }
     }
+
+    private fun loadTPHData(bUnitCode: Int, divisionCode: Int, fieldCode: Int, tphIds: List<Int>) {
+        Log.d("TPH_DEBUG", "Loading TPH Data with ids: $tphIds")
+
+
+        if (!isAdded) {
+            Log.e("TPH_DEBUG", "Fragment not attached, skipping loadTPHData")
+            return
+        }
+
+        tphViewModel.getTPHByAncakNumbers(bUnitCode, divisionCode, fieldCode, tphIds)
+            .observe(viewLifecycleOwner) { tphModels ->
+                try {
+                    if (tphModels.isEmpty()) {
+
+                        binding.layoutTPH.spPanenTBS.setItems(emptyList<String>())
+                        return@observe
+                    }
+
+                    tphNames = tphModels.map { it.tph }
+                    Log.d("TPH_DEBUG", "Setting ${tphNames.size} items to spinner")
+
+                    if (view != null && isAdded) {
+                        binding.layoutTPH.spPanenTBS.setItems(tphNames)
+                    }
+                } catch (e: Exception) {
+                    Log.e("TPH_DEBUG", "Error in loadTPHData: ${e.message}")
+                }
+            }
+    }
+
 
     private fun setupEditTextView(layoutBinding: PertanyaanSpinnerLayoutBinding) {
         with(layoutBinding) {
@@ -325,6 +455,8 @@ class HomeFragment : Fragment() {
 
     @SuppressLint("ResourceAsColor")
     private fun validateAndShowErrors(): Boolean {
+
+        Log.d("testing","skdjfklajslkdf" )
         var isValid = true
         val missingFields = mutableListOf<String>()
 
@@ -356,7 +488,8 @@ class HomeFragment : Fragment() {
                         binding.layoutEstate -> selectedEstate.isEmpty()
                         binding.layoutAfdeling -> selectedAfdeling.isEmpty()
                         binding.layoutBlok -> selectedBlok.isEmpty()
-                        binding.layoutTPH -> selectedTPH.isEmpty()
+
+                        binding.layoutAncak -> selectedAncak.isEmpty()
                         else -> layoutBinding.spPanenTBS.selectedIndex == -1
                     }
                 }
@@ -426,8 +559,7 @@ class HomeFragment : Fragment() {
 
     override fun onResume() {
         super.onResume()
-
-        // Force refresh the location status when fragment resumes
+        Log.d("LIFECYCLE", "onResume")
         locationViewModel.refreshLocationStatus()
 
         locationViewModel.locationPermissions.observe(viewLifecycleOwner) { isLocationEnabled ->
@@ -453,17 +585,37 @@ class HomeFragment : Fragment() {
             lat = location.latitude
             lon = location.longitude
         }
+
+        locationViewModel.locationAccuracy.observe(viewLifecycleOwner) { accuracy ->
+            binding.accuracyLocation.text = String.format("%.1f m", accuracy)
+        }
+
     }
+
 
     override fun onPause() {
         super.onPause()
+        Log.d("LIFECYCLE", "onPause")
         locationViewModel.stopLocationUpdates()
     }
 
     override fun onDestroyView() {
         super.onDestroyView()
+        Log.d("LIFECYCLE", "onDestroyView")
         _binding = null
         locationViewModel.stopLocationUpdates()
     }
 
+    private fun showExitDialog() {
+        AlertDialogUtility.withTwoActions(
+            requireContext(),
+            "Batal",
+            "Keluar",
+            "Apakah anda yakin untuk keluar dari aplikasi MobilePro?",
+            "warning.json",
+
+        ){
+            requireActivity().finish()
+        }
+    }
 }

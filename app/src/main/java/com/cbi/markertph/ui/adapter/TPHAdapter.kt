@@ -50,6 +50,7 @@ class TPHAdapter : RecyclerView.Adapter<TPHAdapter.TPHViewHolder>() {
                 binding.numListTerupload.text = "${position + 1}."
             } else {
                 binding.checkBoxPanen.visibility = View.VISIBLE
+                binding.numListTerupload.visibility = View.GONE
                 binding.checkBoxPanen.isChecked = isSelected
                 binding.checkBoxPanen.setOnCheckedChangeListener { _, isChecked ->
                     onCheckedChange(isChecked)

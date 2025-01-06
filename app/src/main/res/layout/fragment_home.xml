@@ -78,15 +78,15 @@
                     android:id="@+id/statusLocation"
                     android:src="@drawable/baseline_wrong_location_24"
                     app:tint="@color/colorRedDark" />
-                <!--                <TextView-->
-                <!--                    android:layout_width="match_parent"-->
-                <!--                    android:layout_height="wrap_content"-->
-                <!--                    android:id="@+id/rangeLocation"-->
-                <!--                    android:text="12.5 m"-->
-                <!--                    android:fontFamily="@font/inter_medium"-->
-                <!--                    android:textColor="@color/black"-->
-                <!--                    android:textSize="12dp"-->
-                <!--                    android:gravity="center" />-->
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:id="@+id/accuracyLocation"
+                    android:text="12.5 m"
+                    android:fontFamily="@font/inter_bold"
+                    android:textColor="@color/greendarkerbutton"
+                    android:textSize="12dp"
+                    android:gravity="center" />
             </LinearLayout>
         </LinearLayout>
 
@@ -175,7 +175,7 @@
                         app:icon="@drawable/baseline_save_24"
                         app:iconGravity="start"
                         app:iconTint="@color/white"
-                        app:iconPadding="8dp"/>
+                        app:iconPadding="8dp"/>`
 
                 </LinearLayout>
             </LinearLayout>

@@ -9,6 +9,7 @@ data class UploadData(
     @SerializedName("estate") val estate: String?,
     @SerializedName("afdeling") val afdeling: String?,
     @SerializedName("blok") val blok: String?,
+    @SerializedName("ancak") val ancak: String?,
     @SerializedName("tph") val tph: String?,
     @SerializedName("lat") val lat: String,      // Changed from latitude
     @SerializedName("lon") val lon: String,      // Changed from longitude

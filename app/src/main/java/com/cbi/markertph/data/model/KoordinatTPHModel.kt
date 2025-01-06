@@ -12,6 +12,8 @@ data class KoordinatTPHModel(
     val id_afdeling: Int,
     val blok: String,
     val id_blok: Int,
+    val ancak: String,
+    val id_ancak: Int,
     val tph: String,
     val id_tph: Int,
     val latitude: String,
