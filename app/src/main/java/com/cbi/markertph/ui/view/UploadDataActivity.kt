@@ -42,6 +42,7 @@ import com.cbi.markertph.ui.adapter.TPHAdapter
 import com.cbi.markertph.ui.viewModel.TPHViewModel
 import com.cbi.markertph.utils.AlertDialogUtility
 import com.cbi.markertph.utils.AppUtils
+import com.cbi.markertph.utils.AppUtils.stringXML
 import com.cbi.markertph.utils.AppUtils.vibrate
 import com.cbi.markertph.utils.LoadingDialog
 import com.leinardi.android.speeddial.SpeedDialActionItem
@@ -466,9 +467,9 @@ class UploadDataActivity : AppCompatActivity() {
     override fun onBackPressed() {
         AlertDialogUtility.withTwoActions(
             this,
-            "Batal",
-            "Keluar",
-            "Apakah anda yakin untuk keluar dari aplikasi MobilePro?",
+            stringXML(R.string.al_yes),
+            stringXML(R.string.confirmation_dialog_title),
+            stringXML(R.string.al_confirm_out),
             "warning.json"
         ) {
             finish()

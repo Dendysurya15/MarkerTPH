@@ -119,13 +119,13 @@ class HomeActivity : AppCompatActivity() {
 
         binding.mbSaveDataTPH.setOnClickListener {
 
-            if (currentAccuracy == null || currentAccuracy > 30.0f) {
+            if (currentAccuracy == null || currentAccuracy > 10.0f) {
                 vibrate()
                 AlertDialogUtility.withSingleAction(
                     this,
                     stringXML(R.string.al_back),
-                    "Akurasi GPS Tidak Memadai",
-                    "Harap tunggu hingga akurasi GPS dibawah 10 meter",
+                    stringXML(R.string.al_location_not_accurate),
+                    stringXML(R.string.al_location_under_ten_meter),
                     "warning.json",
                     R.color.colorRedDark
                 ) {}
@@ -155,7 +155,7 @@ class HomeActivity : AppCompatActivity() {
                         ancak = selectedAncak,
                         id_ancak = 0,
                         tph = selectedTPH,
-                        id_tph = 0,
+                        id_tph = tphDataList.firstOrNull { it.tph.toString() == selectedTPH }?.id ?: 0,
                         latitude = lat.toString(),
                         longitude = lon.toString(),
                         app_version = app_version
@@ -229,6 +229,7 @@ class HomeActivity : AppCompatActivity() {
             Triple(binding.layoutTPH, getString(R.string.field_tph), InputType.SPINNER)
         )
 
+        // First set up all spinners with empty data and text
         inputMappings.forEach { (layoutBinding, key, inputType) ->
             updateTextInPertanyaan(layoutBinding, key)
             when (inputType) {
@@ -237,74 +238,70 @@ class HomeActivity : AppCompatActivity() {
             }
         }
 
+        val savedEstateIndexSpinner = prefManager?.id_selected_estate ?: 0
+        val savedAfdelingIndexSpinner = prefManager?.id_selected_afdeling ?: 0
+        val savedBlockIndexSpinner = prefManager?.id_selected_blok ?: 0
+        val savedAncakIndexSpinner = prefManager?.id_selected_ancak ?: 0
+        val savedTPHIndexSpinner = prefManager?.id_selected_tph ?: 0
 
-
+        // Load all BUnit codes first
         tphViewModel.getAllBUnitCodes().observe(this) { bUnitCodes ->
             bUnitCodesList = bUnitCodes
             val estateNames = bUnitCodes.map { it.BUnitName }
             setupSpinnerView(binding.layoutEstate, estateNames)
 
-            val savedEstateIndexSpinner = prefManager?.id_selected_estate ?: 0
-            if (savedEstateIndexSpinner in estateNames.indices) {
+            if (savedEstateIndexSpinner >= 0 && savedEstateIndexSpinner < estateNames.size) {
                 binding.layoutEstate.spPanenTBS.setSelectedIndex(savedEstateIndexSpinner)
+                selectedBUnitSpinnerIndex = savedEstateIndexSpinner
+                selectedEstate = estateNames[savedEstateIndexSpinner]
+                selectedBUnitCodeValue = bUnitCodes[savedEstateIndexSpinner].BUnitCode
 
-                val savedEstate = bUnitCodes[savedEstateIndexSpinner]
-                loadDivisionCodes(savedEstate.BUnitCode)
+                // Load division codes based on selected estate
+                tphViewModel.getDivisionCodesByBUnitCode(selectedBUnitCodeValue!!).observe(this) { divisionCodes ->
+                    divisionCodesList = divisionCodes
+                    val divisionNames = divisionCodes.map { it.DivisionName }
+                    setupSpinnerView(binding.layoutAfdeling, divisionNames)
 
-                val savedAfdelingIndexSpinner = prefManager?.id_selected_afdeling ?: 0
-                if (savedAfdelingIndexSpinner != 0) {
-                    tphViewModel.getDivisionCodesByBUnitCode(savedEstate.BUnitCode).observe(this) { divisionCodes ->
-                        val divisionNames = divisionCodes.map { it.DivisionName }
-                        setupSpinnerView(binding.layoutAfdeling, divisionNames)
+                    if (savedAfdelingIndexSpinner >= 0 && savedAfdelingIndexSpinner < divisionNames.size) {
+                        binding.layoutAfdeling.spPanenTBS.setSelectedIndex(savedAfdelingIndexSpinner)
+                        selectedDivisionSpinnerIndex = savedAfdelingIndexSpinner
+                        selectedAfdeling = divisionNames[savedAfdelingIndexSpinner]
+                        selectedDivisionCodeValue = divisionCodes[savedAfdelingIndexSpinner].DivisionCode
 
-                        if (savedAfdelingIndexSpinner in divisionNames.indices) {
-                            binding.layoutAfdeling.spPanenTBS.setSelectedIndex(savedAfdelingIndexSpinner)
+                        // Load field codes based on selected division
+                        tphViewModel.getFieldCodesByBUnitAndDivision(selectedBUnitCodeValue!!, selectedDivisionCodeValue!!).observe(this) { fieldCodes ->
+                            fieldCodesList = fieldCodes
+                            val fieldNames = fieldCodes.map { it.FieldName }
+                            setupSpinnerView(binding.layoutBlok, fieldNames)
 
-                            val selectedDivision = divisionCodes[savedAfdelingIndexSpinner]
-                            loadFieldCodes(savedEstate.BUnitCode, selectedDivision.DivisionCode)
+                            if (savedBlockIndexSpinner >= 0 && savedBlockIndexSpinner < fieldNames.size) {
+                                binding.layoutBlok.spPanenTBS.setSelectedIndex(savedBlockIndexSpinner)
+                                selectedFieldCodeSpinnerIndex = savedBlockIndexSpinner
+                                selectedBlok = fieldNames[savedBlockIndexSpinner]
+                                selectedFieldCodeValue = fieldCodes[savedBlockIndexSpinner].FieldCode
 
-                            val savedBlockIndexSpinner = prefManager?.id_selected_blok ?: 0
+                                tphViewModel.getAncakByFieldCode(selectedBUnitCodeValue!!, selectedDivisionCodeValue!!, selectedFieldCodeValue!!).observe(this) { dataList ->
+                                    tphDataList = dataList
+                                    val ancakList = dataList.map { it.ancak.toString() }.distinct()
+                                    setupSpinnerView(binding.layoutAncak, ancakList)
 
-                            Log.d("testing", savedBlockIndexSpinner.toString())
-                            if (savedBlockIndexSpinner != 0) {
-                                tphViewModel.getFieldCodesByBUnitAndDivision(savedEstate.BUnitCode, selectedDivision.DivisionCode).observe(this) { fieldCodes ->
-                                    val fieldNames = fieldCodes.map { it.FieldName }
-                                    setupSpinnerView(binding.layoutBlok, fieldNames)
+                                    if (savedAncakIndexSpinner >= 0 && savedAncakIndexSpinner < ancakList.size) {
+                                        binding.layoutAncak.spPanenTBS.setSelectedIndex(savedAncakIndexSpinner)
+                                        selectedAncakSpinnerIndex = savedAncakIndexSpinner
+                                        selectedAncak = ancakList[savedAncakIndexSpinner]
 
-                                    if (savedBlockIndexSpinner in fieldNames.indices) {
-                                        binding.layoutBlok.spPanenTBS.setSelectedIndex(savedBlockIndexSpinner)
+                                        val filteredTPHList = tphDataList.filter { it.ancak.toString() == selectedAncak }
+                                        tphIds = filteredTPHList.map { it.id }
 
-                                        val selectedField = fieldCodes[savedBlockIndexSpinner]
-                                        loadAncakData(savedEstate.BUnitCode, selectedDivision.DivisionCode, selectedField.FieldCode)
+                                        // Load TPH data based on selected ancak
+                                        tphViewModel.getTPHByAncakNumbers(selectedBUnitCodeValue!!, selectedDivisionCodeValue!!, selectedFieldCodeValue!!, tphIds).observe(this) { tphModels ->
+                                            val tphNames = tphModels.map { it.tph }.sortedBy { it.toIntOrNull() ?: Int.MAX_VALUE }
+                                            setupSpinnerView(binding.layoutTPH, tphNames)
 
-                                        val savedAncakIndexSpinner = prefManager?.id_selected_ancak ?: 0
-                                        if (savedAncakIndexSpinner != 0) {
-                                            tphViewModel.getAncakByFieldCode(savedEstate.BUnitCode, selectedDivision.DivisionCode, selectedField.FieldCode).observe(this) { dataList ->
-                                                val ancakList = dataList.map { it.ancak.toString() }.distinct()
-                                                setupSpinnerView(binding.layoutAncak, ancakList)
-
-                                                if (savedAncakIndexSpinner in ancakList.indices) {
-                                                    binding.layoutAncak.spPanenTBS.setSelectedIndex(savedAncakIndexSpinner)
-
-                                                    val selectedAncak = ancakList[savedAncakIndexSpinner]
-                                                    val tphIds = dataList.filter { it.ancak.toString() == selectedAncak }
-                                                        .map { it.id }
-
-                                                    loadTPHData(savedEstate.BUnitCode, selectedDivision.DivisionCode, selectedField.FieldCode, tphIds)
-
-                                                    val savedTPHIndexSpinner = prefManager?.id_selected_tph ?: 0
-                                                    if (savedTPHIndexSpinner != 0) {
-                                                        tphViewModel.getTPHByAncakNumbers(savedEstate.BUnitCode, selectedDivision.DivisionCode, selectedField.FieldCode, tphIds)
-                                                            .observe(this) { tphModels ->
-                                                                val tphNames = tphModels.map { it.tph }.sortedBy { it.toIntOrNull() ?: Int.MAX_VALUE }
-                                                                setupSpinnerView(binding.layoutTPH, tphNames)
-
-                                                                if (savedTPHIndexSpinner in tphNames.indices) {
-                                                                    binding.layoutTPH.spPanenTBS.setSelectedIndex(savedTPHIndexSpinner)
-                                                                }
-                                                            }
-                                                    }
-                                                }
+                                            if (savedTPHIndexSpinner >= 0 && savedTPHIndexSpinner < tphNames.size) {
+                                                binding.layoutTPH.spPanenTBS.setSelectedIndex(savedTPHIndexSpinner)
+                                                selectedTPHSpinnerIndex = savedTPHIndexSpinner
+                                                selectedTPH = tphNames[savedTPHIndexSpinner]
                                             }
                                         }
                                     }
@@ -315,19 +312,133 @@ class HomeActivity : AppCompatActivity() {
                 }
             }
         }
-
-
-
     }
 
-    // Assuming you have this function to handle estate selection
-    private fun onEstateSelected(bUnitCode: Int) {
-        // Load afdeling data based on selected estate
-        tphViewModel.getDivisionCodesByBUnitCode(bUnitCode).observe(this) { divisionCodes ->
-            val afdelingNames = divisionCodes.map { it.DivisionName }
-            setupSpinnerView(binding.layoutAfdeling, afdelingNames)
+    // Modified setupSpinnerView to handle selection changes properly
+    private fun setupSpinnerView(layoutBinding: PertanyaanSpinnerLayoutBinding, data: List<String>) {
+        with(layoutBinding) {
+            spPanenTBS.visibility = View.VISIBLE
+            etPanenTBS.visibility = View.GONE
+
+            spPanenTBS.setItems(data)
+            spPanenTBS.setOnItemSelectedListener { _, position, _, item ->
+                tvError.visibility = View.GONE
+                MCVSpinner.strokeColor = ContextCompat.getColor(root.context, R.color.graytextdark)
+
+                when (tvPanenTBS.text.toString()) {
+                    stringXML(R.string.field_estate) -> {
+                        selectedEstate = item.toString()
+                        val selectedBUnitCode = bUnitCodesList.find { it.BUnitName == selectedEstate }?.BUnitCode
+                        selectedBUnitCodeValue = selectedBUnitCode
+                        selectedBUnitSpinnerIndex = position
+
+                        // Clear dependent spinners
+                        setupSpinnerView(binding.layoutAfdeling, emptyList())
+                        setupSpinnerView(binding.layoutBlok, emptyList())
+                        setupSpinnerView(binding.layoutAncak, emptyList())
+                        setupSpinnerView(binding.layoutTPH, emptyList())
+
+                        selectedAfdeling = ""
+                        selectedDivisionCodeValue = null
+                        selectedDivisionSpinnerIndex = null
+
+                        selectedBlok = ""
+                        selectedFieldCodeValue = null
+                        selectedFieldCodeSpinnerIndex = null
+
+                        selectedAncak = ""
+                        selectedAncakInt = null
+                        selectedAncakSpinnerIndex = null
+
+                        selectedTPH = ""
+                        selectedTPHInt = null
+                        selectedTPHSpinnerIndex = null
+
+                        selectedBUnitCode?.let { code ->
+                            loadDivisionCodes(code)
+                        }
+                    }
+                    stringXML(R.string.field_afdeling) -> {
+                        selectedAfdeling = item.toString()
+                        val selectedDivisionCode = divisionCodesList.find { it.DivisionName == selectedAfdeling }?.DivisionCode
+                        selectedDivisionCodeValue = selectedDivisionCode
+                        selectedDivisionSpinnerIndex = position
+
+                        // Clear dependent spinners
+                        setupSpinnerView(binding.layoutBlok, emptyList())
+                        setupSpinnerView(binding.layoutAncak, emptyList())
+                        setupSpinnerView(binding.layoutTPH, emptyList())
+
+                        selectedBlok = ""
+                        selectedFieldCodeValue = null
+                        selectedFieldCodeSpinnerIndex = null
+
+                        selectedAncak = ""
+                        selectedAncakInt = null
+                        selectedAncakSpinnerIndex = null
+
+                        selectedTPH = ""
+                        selectedTPHInt = null
+                        selectedTPHSpinnerIndex = null
+
+                        if (selectedBUnitCodeValue != null && selectedDivisionCode != null) {
+                            loadFieldCodes(selectedBUnitCodeValue!!, selectedDivisionCode)
+                        }
+                    }
+                    stringXML(R.string.field_blok) -> {
+                        selectedBlok = item.toString()
+                        selectedFieldCodeSpinnerIndex = position
+                        selectedFieldCodeValue = fieldCodesList.find { it.FieldName == selectedBlok }?.FieldCode
+
+                        // Clear dependent spinners
+                        setupSpinnerView(binding.layoutAncak, emptyList())
+                        setupSpinnerView(binding.layoutTPH, emptyList())
+
+                        selectedAncak = ""
+                        selectedAncakInt = null
+                        selectedAncakSpinnerIndex = null
+
+                        selectedTPH = ""
+                        selectedTPHInt = null
+                        selectedTPHSpinnerIndex = null
+
+                        if (selectedBUnitCodeValue != null && selectedDivisionCodeValue != null && selectedFieldCodeValue != null) {
+                            loadAncakData(selectedBUnitCodeValue!!, selectedDivisionCodeValue!!, selectedFieldCodeValue!!)
+                        }
+                    }
+                    stringXML(R.string.field_ancak) -> {
+                        selectedAncak = item.toString()
+                        selectedAncakSpinnerIndex = position
+                        selectedAncakInt = position
+
+                        // Clear TPH spinner
+                        setupSpinnerView(binding.layoutTPH, emptyList())
+
+                        selectedTPH = ""
+                        selectedTPHInt = null
+                        selectedTPHSpinnerIndex = null
+
+                        try {
+                            val filteredTPHList = tphDataList.filter { it.ancak.toString() == selectedAncak }
+                            tphIds = filteredTPHList.map { it.id }
+
+                            if (selectedBUnitCodeValue != null && selectedDivisionCodeValue != null && selectedFieldCodeValue != null && tphIds.isNotEmpty()) {
+                                loadTPHData(selectedBUnitCodeValue!!, selectedDivisionCodeValue!!, selectedFieldCodeValue!!, tphIds)
+                            }
+                        } catch (e: Exception) {
+                            Log.e("TPH_LIFECYCLE", "Error in ancak selection", e)
+                        }
+                    }
+                    stringXML(R.string.field_tph) -> {
+                        selectedTPH = item.toString()
+                        selectedTPHInt = position
+                        selectedTPHSpinnerIndex = position
+                    }
+                }
+            }
         }
     }
+
 
     private fun setupEditTextView(layoutBinding: PertanyaanSpinnerLayoutBinding) {
         with(layoutBinding) {
@@ -374,89 +485,6 @@ class HomeActivity : AppCompatActivity() {
         }
     }
 
-    private fun setupSpinnerView(layoutBinding: PertanyaanSpinnerLayoutBinding, data: List<String>) {
-        with(layoutBinding) {
-            spPanenTBS.visibility = View.VISIBLE
-            etPanenTBS.visibility = View.GONE
-
-
-            spPanenTBS.setItems(data)
-            spPanenTBS.setOnItemSelectedListener { _, position, _, item ->
-                tvError.visibility = View.GONE
-                MCVSpinner.strokeColor = ContextCompat.getColor(root.context, R.color.graytextdark)
-
-                when (tvPanenTBS.text.toString()) {
-                    stringXML(R.string.field_estate) -> {
-                        selectedEstate = item.toString()
-                        val selectedBUnitCode = bUnitCodesList.find { it.BUnitName == selectedEstate }?.BUnitCode
-                        selectedBUnitCodeValue = selectedBUnitCode
-                        val index = binding.layoutEstate.spPanenTBS.getSelectedIndex()
-                        selectedBUnitSpinnerIndex = index
-
-                        selectedBUnitCode?.let { code ->
-                            loadDivisionCodes(code)
-                        }
-                    }
-                    stringXML(R.string.field_afdeling) -> {
-                        selectedAfdeling = item.toString()
-                        val selectedDivisionCode = divisionCodesList.find { it.DivisionName == selectedAfdeling }?.DivisionCode
-                        selectedDivisionCodeValue = selectedDivisionCode
-                        val index = binding.layoutAfdeling.spPanenTBS.getSelectedIndex()
-                        selectedDivisionSpinnerIndex = index
-                        setupSpinnerView(binding.layoutAncak, emptyList())
-                        setupSpinnerView(binding.layoutTPH, emptyList())
-                        if (selectedBUnitCodeValue != null && selectedDivisionCode != null) {
-                            loadFieldCodes(selectedBUnitCodeValue!!, selectedDivisionCode)
-
-                        }
-                    }
-                    stringXML(R.string.field_blok) -> {
-                        selectedBlok = item.toString()
-                        val index = binding.layoutBlok.spPanenTBS.getSelectedIndex()
-                        selectedFieldCodeSpinnerIndex = index
-
-                        selectedFieldCodeValue = fieldCodesList.find { it.FieldName == selectedBlok }?.FieldCode
-                        setupSpinnerView(binding.layoutTPH, emptyList())
-                        if (selectedBUnitCodeValue != null && selectedDivisionCodeValue != null && selectedFieldCodeValue != null) {
-                            loadAncakData(selectedBUnitCodeValue!!, selectedDivisionCodeValue!!, selectedFieldCodeValue!!)
-                        }
-                    }
-                    stringXML(R.string.field_ancak) -> {
-                        selectedAncak = item.toString()
-                        val index = binding.layoutAncak.spPanenTBS.getSelectedIndex() // Get the index of the selected item
-                        selectedAncakSpinnerIndex = index
-                        selectedAncakInt = index
-                        try {
-                            val filteredTPHList = tphDataList.filter {
-                                it.ancak.toString() == selectedAncak
-                            }
-
-                            tphIds = filteredTPHList.map { it.id }
-
-                            if (selectedBUnitCodeValue == null || selectedDivisionCodeValue == null || selectedFieldCodeValue == null) {
-                                return@setOnItemSelectedListener
-                            }
-
-                            if (tphIds.isNotEmpty()) {
-                                loadTPHData(selectedBUnitCodeValue!!, selectedDivisionCodeValue!!, selectedFieldCodeValue!!, tphIds)
-                            } else {
-                                Log.e("TPH_LIFECYCLE", "No TPH IDs found for selected ancak")
-                            }
-                        } catch (e: Exception) {
-                            Log.e("TPH_LIFECYCLE", "Error in ancak selection", e)
-                            e.printStackTrace()
-                        }
-                    }
-                    stringXML(R.string.field_tph) -> {
-                        selectedTPH = item.toString()
-                        val index = binding.layoutTPH.spPanenTBS.getSelectedIndex() // Get the index of the selected item
-                        selectedTPHInt = index
-                        selectedTPHSpinnerIndex = index
-                    }
-                }
-            }
-        }
-    }
 
     private fun loadDivisionCodes(bUnitCode: Int) {
         tphViewModel.getDivisionCodesByBUnitCode(bUnitCode).observe(this) { divisionCodes ->
@@ -548,8 +576,8 @@ class HomeActivity : AppCompatActivity() {
                         binding.layoutEstate -> selectedEstate.isEmpty()
                         binding.layoutAfdeling -> selectedAfdeling.isEmpty()
                         binding.layoutBlok -> selectedBlok.isEmpty()
-
                         binding.layoutAncak -> selectedAncak.isEmpty()
+                        binding.layoutTPH -> selectedTPH.isEmpty()
                         else -> layoutBinding.spPanenTBS.selectedIndex == -1
                     }
                 }
@@ -599,9 +627,9 @@ class HomeActivity : AppCompatActivity() {
     private fun showExitDialog() {
         AlertDialogUtility.withTwoActions(
             this,
-            "Ya",
-            "Keluar",
-            "Apakah anda yakin untuk keluar dari aplikasi MobilePro?",
+            stringXML(R.string.al_yes),
+            stringXML(R.string.confirmation_dialog_title),
+            stringXML(R.string.al_confirm_out),
             "warning.json"
         ) {
             finish()
