@@ -282,6 +282,8 @@ class TPHViewModel(application: Application, private val repository: TPHReposito
     }
 
 
+
+
     @Suppress("UNCHECKED_CAST")
     class Factory(private val application: Application, private val repository: TPHRepository) : ViewModelProvider.Factory {
         override fun <T : ViewModel> create(modelClass: Class<T>): T {
