@@ -60,6 +60,7 @@
                 android:imeOptions="actionDone"
                 android:singleLine="true"
                 android:maxLines="1"
+                android:textColor="@color/black"
                 android:inputType="text"
                 android:padding="16dp"
                 android:textSize="15dp" />

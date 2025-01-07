@@ -18,8 +18,8 @@ interface ApiService {
         "Content-Type: application/json"
     )
     @POST("storeDataTPH")
-    fun uploadData(@Body data: BatchUploadRequest): Call<UploadResponse>
+    fun uploadData(@Body data: BatchUploadRequest): retrofit2.Call<UploadResponse>
 
     @GET("fetchRawDataTPH")
-    fun fetchRawData(): Call<FetchResponseTPH> // Add this for fetching data
+    fun fetchRawData(): retrofit2.Call<FetchResponseTPH>
 }

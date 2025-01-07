@@ -21,6 +21,7 @@ class LoadingDialog(context: Context) : Dialog(context) {
     private var bounceAnimation: Animation? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
+
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_loading_dialog)
 

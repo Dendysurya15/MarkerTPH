@@ -1,6 +1,7 @@
 package com.cbi.markertph
 
 import android.content.Intent
+import android.os.Build
 import android.os.Bundle
 import android.util.Log
 import android.widget.TextView
@@ -22,16 +23,22 @@ import com.cbi.markertph.data.repository.TPHRepository
 import com.cbi.markertph.ui.theme.MarkerTPHTheme
 import com.cbi.markertph.ui.view.HomeActivity
 import com.cbi.markertph.ui.view.HomePage
+import com.cbi.markertph.ui.view.UploadDataActivity
 import com.cbi.markertph.ui.viewModel.TPHViewModel
 import com.cbi.markertph.utils.AppUtils
 import com.cbi.markertph.utils.AppUtils.stringXML
 import com.cbi.markertph.utils.LoadingDialog
 import com.google.gson.Gson
+import com.jaredrummler.materialspinner.BuildConfig
 import kotlinx.coroutines.Dispatchers
 
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import java.io.File
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
 
 class MainActivity : ComponentActivity() {
     private var showingSplash = true
@@ -79,7 +86,7 @@ class MainActivity : ComponentActivity() {
                     showMainContent()
                 } else {
                     Log.d("DataCheck", "All tables have data, proceeding to HomePage")
-                    startActivity(Intent(this@MainActivity, HomePage::class.java))
+                    startActivity(Intent(this@MainActivity, HomeActivity::class.java))
                     finish()
                 }
             } catch (e: Exception) {
@@ -104,6 +111,27 @@ class MainActivity : ComponentActivity() {
             this,
             TPHViewModel.Factory(application, TPHRepository(this))
         )[TPHViewModel::class.java]
+    }
+
+    private fun logErrorToFile(errorMessage: String) {
+        try {
+            val filename = "error_log_${System.currentTimeMillis()}.txt"
+            val file = File(getExternalFilesDir(null), filename)
+
+            file.writeText("""
+            Time: ${SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.getDefault()).format(Date())}
+            Device: ${Build.MANUFACTURER} ${Build.MODEL}
+            Android Version: ${Build.VERSION.RELEASE}
+            App Version: ${BuildConfig.VERSION_NAME} (${BuildConfig.VERSION_CODE})
+            
+            Error Details:
+            $errorMessage
+        """.trimIndent())
+
+            Log.e("MainActivity", "Error logged to file: ${file.absolutePath}")
+        } catch (e: Exception) {
+            Log.e("MainActivity", "Failed to write error log: ${e.message}")
+        }
     }
 
     private fun showMainContent() {
@@ -166,7 +194,7 @@ class MainActivity : ComponentActivity() {
                         // Navigate after all processing is done
                         withContext(Dispatchers.Main) {
                             loadingDialog.dismiss()
-                            startActivity(Intent(this@MainActivity, HomePage::class.java))
+                            startActivity(Intent(this@MainActivity, HomeActivity::class.java))
                             finish()
                         }
                     } else {
@@ -192,6 +220,10 @@ class MainActivity : ComponentActivity() {
                     }
                 }
             } catch (e: Exception) {
+
+                logErrorToFile("Exception Details:\n" +
+                        "Message: ${e.message}\n" +
+                        "Stack Trace:\n${e.stackTraceToString()}")
                 progressJob.cancel()
 
                 withContext(Dispatchers.Main) {
