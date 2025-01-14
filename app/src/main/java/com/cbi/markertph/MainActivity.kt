@@ -60,43 +60,45 @@ class MainActivity : ComponentActivity() {
 
     private fun checkDataAndFetch() {
         lifecycleScope.launch {
-            try {
-                // Check all tables in background
-                val needsFetch = withContext(Dispatchers.IO) {
-                    val hasCompanyCode = tphViewModel.getCompanyCodeCount() > 0
-                    val hasBUnitCode = tphViewModel.getBUnitCodeCount() > 0
-                    val hasDivisionCode = tphViewModel.getDivisionCodeCount() > 0
-                    val hasFieldCode = tphViewModel.getFieldCodeCount() > 0
-                    val hasTPH = tphViewModel.getTPHCount() > 0
-
-//                    Log.d("DataCheck", """
-//                    CompanyCode: $hasCompanyCode
-//                    BUnitCode: $hasBUnitCode
-//                    DivisionCode: $hasDivisionCode
-//                    FieldCode: $hasFieldCode
-//                    TPH: $hasTPH
-//                """.trimIndent())
-
-                    !hasCompanyCode || !hasBUnitCode || !hasDivisionCode ||
-                            !hasFieldCode || !hasTPH
-                }
-
-                if (needsFetch) {
-                    Log.d("DataCheck", "Some tables are empty, fetching data...")
-                    showMainContent()
-                } else {
-                    Log.d("DataCheck", "All tables have data, proceeding to HomePage")
-                    startActivity(Intent(this@MainActivity, HomeActivity::class.java))
-                    finish()
-                }
-            } catch (e: Exception) {
-                Log.e("DataCheck", "Error checking data", e)
-                Toast.makeText(
-                    this@MainActivity,
-                    "Error checking database: ${e.message}",
-                    Toast.LENGTH_SHORT
-                ).show()
-            }
+            startActivity(Intent(this@MainActivity, HomeActivity::class.java))
+            finish()
+//            try {
+//                // Check all tables in background
+//                val needsFetch = withContext(Dispatchers.IO) {
+//                    val hasCompanyCode = tphViewModel.getCompanyCodeCount() > 0
+//                    val hasBUnitCode = tphViewModel.getBUnitCodeCount() > 0
+//                    val hasDivisionCode = tphViewModel.getDivisionCodeCount() > 0
+//                    val hasFieldCode = tphViewModel.getFieldCodeCount() > 0
+//                    val hasTPH = tphViewModel.getTPHCount() > 0
+//
+////                    Log.d("DataCheck", """
+////                    CompanyCode: $hasCompanyCode
+////                    BUnitCode: $hasBUnitCode
+////                    DivisionCode: $hasDivisionCode
+////                    FieldCode: $hasFieldCode
+////                    TPH: $hasTPH
+////                """.trimIndent())
+//
+//                    !hasCompanyCode || !hasBUnitCode || !hasDivisionCode ||
+//                            !hasFieldCode || !hasTPH
+//                }
+//
+//                if (needsFetch) {
+//                    Log.d("DataCheck", "Some tables are empty, fetching data...")
+//                    showMainContent()
+//                } else {
+//                    Log.d("DataCheck", "All tables have data, proceeding to HomePage")
+//                    startActivity(Intent(this@MainActivity, HomeActivity::class.java))
+//                    finish()
+//                }
+//            } catch (e: Exception) {
+//                Log.e("DataCheck", "Error checking data", e)
+//                Toast.makeText(
+//                    this@MainActivity,
+//                    "Error checking database: ${e.message}",
+//                    Toast.LENGTH_SHORT
+//                ).show()
+//            }
         }
     }
 

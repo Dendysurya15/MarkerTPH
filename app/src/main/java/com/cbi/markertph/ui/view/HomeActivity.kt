@@ -1,13 +1,22 @@
 package com.cbi.markertph.ui.view
 
+import android.Manifest
+import android.annotation.SuppressLint
+import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
+import android.content.IntentFilter
+import android.content.pm.PackageManager
 import android.content.res.ColorStateList
+import android.location.LocationManager
+import android.net.ConnectivityManager
+import android.net.NetworkCapabilities
 import android.os.Bundle
 import android.text.Editable
 import android.text.TextWatcher
 import android.util.Log
 import android.view.View
+import android.view.ViewGroup
 import android.view.inputmethod.EditorInfo
 import android.view.inputmethod.InputMethodManager
 import android.widget.AdapterView
@@ -19,12 +28,16 @@ import android.widget.Toast
 import androidx.activity.OnBackPressedCallback
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.lifecycle.ViewModelProvider
+import androidx.lifecycle.lifecycleScope
+import androidx.recyclerview.widget.LinearLayoutManager
+import androidx.recyclerview.widget.RecyclerView
 import com.cbi.markertph.R
 import com.cbi.markertph.data.model.BUnitCodeModel
 import com.cbi.markertph.data.model.DivisionCodeModel
@@ -33,6 +46,7 @@ import com.cbi.markertph.data.model.TPHModel
 import com.cbi.markertph.data.repository.TPHRepository
 import com.cbi.markertph.databinding.ActivityHomeBinding
 import com.cbi.markertph.databinding.PertanyaanSpinnerLayoutBinding
+import com.cbi.markertph.ui.adapter.ProgressUploadAdapter
 import com.cbi.markertph.ui.view.ui.home.HomeFragment.InputType
 import com.cbi.markertph.ui.viewModel.LocationViewModel
 import com.cbi.markertph.ui.viewModel.TPHViewModel
@@ -41,9 +55,22 @@ import com.cbi.markertph.utils.AppUtils
 import com.cbi.markertph.utils.AppUtils.stringXML
 import com.cbi.markertph.utils.AppUtils.vibrate
 import com.cbi.markertph.utils.PrefManager
+import com.google.android.gms.location.LocationAvailability
+import com.google.android.gms.location.LocationCallback
+import com.google.android.gms.location.LocationRequest
+import com.google.android.gms.location.LocationServices
 import com.google.android.material.button.MaterialButton
 import com.google.android.material.snackbar.Snackbar
+import com.google.gson.Gson
 import com.jaredrummler.materialspinner.MaterialSpinner
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
+import okhttp3.ResponseBody
+import retrofit2.Response
+import java.io.File
+import java.io.FileOutputStream
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -78,6 +105,29 @@ class HomeActivity : AppCompatActivity() {
     private var selectedAncakInt: Int? = null
     private var selectedTPHInt: Int? = null
 
+    private val locationSettingsCallback = object : LocationCallback() {
+        override fun onLocationAvailability(locationAvailability: LocationAvailability) {
+            super.onLocationAvailability(locationAvailability)
+
+            val locationManager = getSystemService(Context.LOCATION_SERVICE) as LocationManager
+            val isGpsEnabled = locationManager.isProviderEnabled(LocationManager.GPS_PROVIDER)
+
+            // Only show toast if GPS is actually disabled in system settings
+            if (!isGpsEnabled) {
+                locationViewModel.refreshLocationStatus()
+                locationEnable = false
+                AlertDialogUtility.withSingleAction(
+                    this@HomeActivity,
+                    stringXML(R.string.al_back),
+                    stringXML(R.string.al_location_not_ready),
+                    stringXML(R.string.al_location_description_failed),
+                    "warning.json",
+                    R.color.colorRedDark
+                ) {}
+            }
+        }
+    }
+
     private var selectedDivisionSpinnerIndex: Int? = null
     private var selectedBUnitSpinnerIndex: Int? = null
     private var selectedFieldCodeSpinnerIndex: Int? = null
@@ -89,6 +139,51 @@ class HomeActivity : AppCompatActivity() {
         SPINNER,
         EDITTEXT
     }
+
+    private val requiredPermissions = arrayOf(
+        Manifest.permission.CAMERA,
+        Manifest.permission.READ_EXTERNAL_STORAGE,
+        Manifest.permission.WRITE_EXTERNAL_STORAGE,
+        Manifest.permission.ACCESS_FINE_LOCATION, // Add fine location permission
+        Manifest.permission.ACCESS_COARSE_LOCATION // Add coarse location permission (optional)
+        )
+
+    private val locationSettingsReceiver = object : BroadcastReceiver() {
+        override fun onReceive(context: Context?, intent: Intent?) {
+            if (intent?.action == LocationManager.PROVIDERS_CHANGED_ACTION) {
+                val locationManager = getSystemService(Context.LOCATION_SERVICE) as LocationManager
+                val isGpsEnabled = locationManager.isProviderEnabled(LocationManager.GPS_PROVIDER)
+
+                if (!isGpsEnabled) {
+                    locationEnable = false
+                    locationViewModel.refreshLocationStatus()
+//                    Toast.makeText(
+//                        this@HomeActivity,
+//                        "GPS is turned off. Please enable location services",
+//                        Toast.LENGTH_SHORT
+//                    ).show()
+                    AlertDialogUtility.withSingleAction(
+                        this@HomeActivity,
+                        stringXML(R.string.al_back),
+                        stringXML(R.string.al_location_not_ready),
+                        stringXML(R.string.al_location_description_failed),
+                        "warning.json",
+                        R.color.colorRedDark
+                    ) {}
+                } else {
+                    // GPS is enabled, start location updates
+                    locationEnable = true
+                    locationViewModel.startLocationUpdates()
+                }
+            }
+        }
+    }
+    data class ErrorResponse(
+        val statusCode: Int,
+        val message: String,
+        val error: String? = null
+    )
+    private val permissionRequestCode = 1001
 
     private lateinit var inputMappings: List<Triple<PertanyaanSpinnerLayoutBinding, String, InputType>>
 
@@ -107,10 +202,16 @@ class HomeActivity : AppCompatActivity() {
         setContentView(binding.root)
         prefManager = PrefManager(this)
         initViewModel()
+        checkPermissions()
         setupLayout()
         setAppVersion()
 
 
+
+        registerReceiver(
+            locationSettingsReceiver,
+            IntentFilter(LocationManager.PROVIDERS_CHANGED_ACTION)
+        )
         binding.menuUpload.setOnClickListener{
             this.vibrate()
             startActivity(Intent(this@HomeActivity, UploadDataActivity::class.java))
@@ -244,74 +345,99 @@ class HomeActivity : AppCompatActivity() {
         val savedAncakIndexSpinner = prefManager?.id_selected_ancak ?: 0
         val savedTPHIndexSpinner = prefManager?.id_selected_tph ?: 0
 
-        // Load all BUnit codes first
-        tphViewModel.getAllBUnitCodes().observe(this) { bUnitCodes ->
-            bUnitCodesList = bUnitCodes
-            val estateNames = bUnitCodes.map { it.BUnitName }
-            setupSpinnerView(binding.layoutEstate, estateNames)
-
-            if (savedEstateIndexSpinner >= 0 && savedEstateIndexSpinner < estateNames.size) {
-                binding.layoutEstate.spPanenTBS.setSelectedIndex(savedEstateIndexSpinner)
-                selectedBUnitSpinnerIndex = savedEstateIndexSpinner
-                selectedEstate = estateNames[savedEstateIndexSpinner]
-                selectedBUnitCodeValue = bUnitCodes[savedEstateIndexSpinner].BUnitCode
-
-                // Load division codes based on selected estate
-                tphViewModel.getDivisionCodesByBUnitCode(selectedBUnitCodeValue!!).observe(this) { divisionCodes ->
-                    divisionCodesList = divisionCodes
-                    val divisionNames = divisionCodes.map { it.DivisionName }
-                    setupSpinnerView(binding.layoutAfdeling, divisionNames)
-
-                    if (savedAfdelingIndexSpinner >= 0 && savedAfdelingIndexSpinner < divisionNames.size) {
-                        binding.layoutAfdeling.spPanenTBS.setSelectedIndex(savedAfdelingIndexSpinner)
-                        selectedDivisionSpinnerIndex = savedAfdelingIndexSpinner
-                        selectedAfdeling = divisionNames[savedAfdelingIndexSpinner]
-                        selectedDivisionCodeValue = divisionCodes[savedAfdelingIndexSpinner].DivisionCode
-
-                        // Load field codes based on selected division
-                        tphViewModel.getFieldCodesByBUnitAndDivision(selectedBUnitCodeValue!!, selectedDivisionCodeValue!!).observe(this) { fieldCodes ->
-                            fieldCodesList = fieldCodes
-                            val fieldNames = fieldCodes.map { it.FieldName }
-                            setupSpinnerView(binding.layoutBlok, fieldNames)
-
-                            if (savedBlockIndexSpinner >= 0 && savedBlockIndexSpinner < fieldNames.size) {
-                                binding.layoutBlok.spPanenTBS.setSelectedIndex(savedBlockIndexSpinner)
-                                selectedFieldCodeSpinnerIndex = savedBlockIndexSpinner
-                                selectedBlok = fieldNames[savedBlockIndexSpinner]
-                                selectedFieldCodeValue = fieldCodes[savedBlockIndexSpinner].FieldCode
-
-                                tphViewModel.getAncakByFieldCode(selectedBUnitCodeValue!!, selectedDivisionCodeValue!!, selectedFieldCodeValue!!).observe(this) { dataList ->
-                                    tphDataList = dataList
-                                    val ancakList = dataList.map { it.ancak.toString() }.distinct()
-                                    setupSpinnerView(binding.layoutAncak, ancakList)
-
-                                    if (savedAncakIndexSpinner >= 0 && savedAncakIndexSpinner < ancakList.size) {
-                                        binding.layoutAncak.spPanenTBS.setSelectedIndex(savedAncakIndexSpinner)
-                                        selectedAncakSpinnerIndex = savedAncakIndexSpinner
-                                        selectedAncak = ancakList[savedAncakIndexSpinner]
-
-                                        val filteredTPHList = tphDataList.filter { it.ancak.toString() == selectedAncak }
-                                        tphIds = filteredTPHList.map { it.id }
-
-                                        // Load TPH data based on selected ancak
-                                        tphViewModel.getTPHByAncakNumbers(selectedBUnitCodeValue!!, selectedDivisionCodeValue!!, selectedFieldCodeValue!!, tphIds).observe(this) { tphModels ->
-                                            val tphNames = tphModels.map { it.tph }.sortedBy { it.toIntOrNull() ?: Int.MAX_VALUE }
-                                            setupSpinnerView(binding.layoutTPH, tphNames)
-
-                                            if (savedTPHIndexSpinner >= 0 && savedTPHIndexSpinner < tphNames.size) {
-                                                binding.layoutTPH.spPanenTBS.setSelectedIndex(savedTPHIndexSpinner)
-                                                selectedTPHSpinnerIndex = savedTPHIndexSpinner
-                                                selectedTPH = tphNames[savedTPHIndexSpinner]
-                                            }
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                    }
+        inputMappings.forEach { (layoutBinding, key, inputType) ->
+            updateTextInPertanyaan(layoutBinding, key)
+            when (inputType) {
+                InputType.SPINNER -> {
+//                    when (layoutBinding.id) {
+//                        R.id.layoutEstate -> {
+//
+//                            val bUnitNames = bUnitCodeList.map { it.BUnitName }
+//                            setupSpinnerView(layoutView, bUnitNames)
+//                        }
+//                        R.id.layoutTipePanen->{
+//                            val tipePanenOptions = resources.getStringArray(R.array.tipe_panen_options).toList()
+//                            setupSpinnerView(layoutView, tipePanenOptions)
+//                        }
+//                        else -> {
+//                            // Set empty list for any other spinner
+//                            setupSpinnerView(layoutView, emptyList())
+//                        }
+//
+//                    }
                 }
+                InputType.EDITTEXT -> setupEditTextView(layoutBinding)
             }
         }
+
+        // Load all BUnit codes first
+//        tphViewModel.getAllBUnitCodes().observe(this) { bUnitCodes ->
+//            bUnitCodesList = bUnitCodes
+//            val estateNames = bUnitCodes.map { it.BUnitName }
+//            setupSpinnerView(binding.layoutEstate, estateNames)
+//
+//            if (savedEstateIndexSpinner >= 0 && savedEstateIndexSpinner < estateNames.size) {
+//                binding.layoutEstate.spPanenTBS.setSelectedIndex(savedEstateIndexSpinner)
+//                selectedBUnitSpinnerIndex = savedEstateIndexSpinner
+//                selectedEstate = estateNames[savedEstateIndexSpinner]
+//                selectedBUnitCodeValue = bUnitCodes[savedEstateIndexSpinner].BUnitCode
+//
+//                // Load division codes based on selected estate
+//                tphViewModel.getDivisionCodesByBUnitCode(selectedBUnitCodeValue!!).observe(this) { divisionCodes ->
+//                    divisionCodesList = divisionCodes
+//                    val divisionNames = divisionCodes.map { it.DivisionName }
+//                    setupSpinnerView(binding.layoutAfdeling, divisionNames)
+//
+//                    if (savedAfdelingIndexSpinner >= 0 && savedAfdelingIndexSpinner < divisionNames.size) {
+//                        binding.layoutAfdeling.spPanenTBS.setSelectedIndex(savedAfdelingIndexSpinner)
+//                        selectedDivisionSpinnerIndex = savedAfdelingIndexSpinner
+//                        selectedAfdeling = divisionNames[savedAfdelingIndexSpinner]
+//                        selectedDivisionCodeValue = divisionCodes[savedAfdelingIndexSpinner].DivisionCode
+//
+//                        // Load field codes based on selected division
+//                        tphViewModel.getFieldCodesByBUnitAndDivision(selectedBUnitCodeValue!!, selectedDivisionCodeValue!!).observe(this) { fieldCodes ->
+//                            fieldCodesList = fieldCodes
+//                            val fieldNames = fieldCodes.map { it.FieldName }
+//                            setupSpinnerView(binding.layoutBlok, fieldNames)
+//
+//                            if (savedBlockIndexSpinner >= 0 && savedBlockIndexSpinner < fieldNames.size) {
+//                                binding.layoutBlok.spPanenTBS.setSelectedIndex(savedBlockIndexSpinner)
+//                                selectedFieldCodeSpinnerIndex = savedBlockIndexSpinner
+//                                selectedBlok = fieldNames[savedBlockIndexSpinner]
+//                                selectedFieldCodeValue = fieldCodes[savedBlockIndexSpinner].FieldCode
+//
+//                                tphViewModel.getAncakByFieldCode(selectedBUnitCodeValue!!, selectedDivisionCodeValue!!, selectedFieldCodeValue!!).observe(this) { dataList ->
+//                                    tphDataList = dataList
+//                                    val ancakList = dataList.map { it.ancak.toString() }.distinct()
+//                                    setupSpinnerView(binding.layoutAncak, ancakList)
+//
+//                                    if (savedAncakIndexSpinner >= 0 && savedAncakIndexSpinner < ancakList.size) {
+//                                        binding.layoutAncak.spPanenTBS.setSelectedIndex(savedAncakIndexSpinner)
+//                                        selectedAncakSpinnerIndex = savedAncakIndexSpinner
+//                                        selectedAncak = ancakList[savedAncakIndexSpinner]
+//
+//                                        val filteredTPHList = tphDataList.filter { it.ancak.toString() == selectedAncak }
+//                                        tphIds = filteredTPHList.map { it.id }
+//
+//                                        // Load TPH data based on selected ancak
+//                                        tphViewModel.getTPHByAncakNumbers(selectedBUnitCodeValue!!, selectedDivisionCodeValue!!, selectedFieldCodeValue!!, tphIds).observe(this) { tphModels ->
+//                                            val tphNames = tphModels.map { it.tph }.sortedBy { it.toIntOrNull() ?: Int.MAX_VALUE }
+//                                            setupSpinnerView(binding.layoutTPH, tphNames)
+//
+//                                            if (savedTPHIndexSpinner >= 0 && savedTPHIndexSpinner < tphNames.size) {
+//                                                binding.layoutTPH.spPanenTBS.setSelectedIndex(savedTPHIndexSpinner)
+//                                                selectedTPHSpinnerIndex = savedTPHIndexSpinner
+//                                                selectedTPH = tphNames[savedTPHIndexSpinner]
+//                                            }
+//                                        }
+//                                    }
+//                                }
+//                            }
+//                        }
+//                    }
+//                }
+//            }
+//        }
     }
 
     // Modified setupSpinnerView to handle selection changes properly
@@ -390,7 +516,6 @@ class HomeActivity : AppCompatActivity() {
                         selectedFieldCodeSpinnerIndex = position
                         selectedFieldCodeValue = fieldCodesList.find { it.FieldName == selectedBlok }?.FieldCode
 
-                        // Clear dependent spinners
                         setupSpinnerView(binding.layoutAncak, emptyList())
                         setupSpinnerView(binding.layoutTPH, emptyList())
 
@@ -636,9 +761,20 @@ class HomeActivity : AppCompatActivity() {
         }
     }
 
+    @SuppressLint("MissingPermission")
     override fun onResume() {
         super.onResume()
         locationViewModel.refreshLocationStatus()
+        LocationServices.getFusedLocationProviderClient(this)
+            .requestLocationUpdates(
+                LocationRequest.create().apply {
+                    priority = LocationRequest.PRIORITY_HIGH_ACCURACY
+                    interval = 5000 // Check every 5 seconds
+                },
+                locationSettingsCallback,
+                null
+            )
+
 
         locationViewModel.locationPermissions.observe(this) { isLocationEnabled ->
             if (!isLocationEnabled) {
@@ -692,13 +828,347 @@ class HomeActivity : AppCompatActivity() {
         }
     }
 
+    private fun isInternetAvailable(): Boolean {
+        val connectivityManager =
+            getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
+        val activeNetwork = connectivityManager.activeNetwork
+        val capabilities = connectivityManager.getNetworkCapabilities(activeNetwork)
+
+        // Check internet capability and perform ping
+        return capabilities != null && capabilities.hasCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET) && pingGoogle()
+    }
+
+    /**
+     * Pings Google to verify internet connectivity.
+     */
+    private fun pingGoogle(): Boolean {
+        return try {
+            val process = Runtime.getRuntime().exec("/system/bin/ping -c 1 www.google.com")
+            val exitCode = process.waitFor()
+            exitCode == 0
+        } catch (e: Exception) {
+            Log.e("PingGoogle", "Ping failed: ${e.message}")
+            false
+        }
+    }
+
+    private fun startFileDownload() {
+
+        if (!isInternetAvailable()) {
+            AlertDialogUtility.withSingleAction(
+                this,
+                stringXML(R.string.al_back),
+                stringXML(R.string.al_no_internet_connection),
+                stringXML(R.string.al_no_internet_connection_description_download_dataset),
+                "network_error.json",
+                R.color.colorRedDark
+            ) {}
+            return
+        }
+
+        lifecycleScope.launch {
+            // Inflate dialog layout
+            val dialogView = layoutInflater.inflate(R.layout.list_card_upload, null)
+            val alertDialog = AlertDialog.Builder(this@HomeActivity)
+                .setCancelable(false)
+                .setView(dialogView)
+                .create()
+
+            alertDialog.show()
+            alertDialog.window?.setLayout(
+                ViewGroup.LayoutParams.MATCH_PARENT,
+                ViewGroup.LayoutParams.WRAP_CONTENT
+            )
+
+            val recyclerView = dialogView.findViewById<RecyclerView>(R.id.features_recycler_view)
+            recyclerView?.layoutManager = LinearLayoutManager(this@HomeActivity, LinearLayoutManager.VERTICAL, false)
+
+            // Get saved file list and determine which files need downloading
+            val savedFileList = prefManager!!.getFileList().let { list ->
+                if (list.isEmpty() || list.size != AppUtils.ApiCallManager.apiCallList.size) {
+                    // If empty or wrong size, create new list with correct size
+                    MutableList<String?>(AppUtils.ApiCallManager.apiCallList.size) { index ->
+                        // Copy existing values if any, null otherwise
+                        list.getOrNull(index)
+                    }
+                } else {
+                    list.toMutableList()
+                }
+            }
+
+            val filesToDownload = AppUtils.ApiCallManager.apiCallList.filterIndexed { index, pair ->
+                val fileName = pair.first
+                val file = File(this@HomeActivity.getExternalFilesDir(null), fileName)
+                val needsDownload = savedFileList.getOrNull(index) == null || !file.exists()
+                Log.d("FileDownload", "File: $fileName, Needs download: $needsDownload")
+                needsDownload
+            }
+
+            val apiCallsSize = filesToDownload.size
+            if (apiCallsSize == 0) {
+                Log.d("FileDownload", "No files need downloading")
+                alertDialog.dismiss()
+                return@launch
+            }
+
+            val progressList = MutableList(apiCallsSize) { 0 }
+            val statusList = MutableList(apiCallsSize) { "Menunggu" }
+            val iconList = MutableList(apiCallsSize) { R.id.progress_circular_loading }
+            val fileNames = filesToDownload.map { it.first }
+
+            val progressAdapter = ProgressUploadAdapter(progressList, statusList, iconList, fileNames.toMutableList())
+            recyclerView?.adapter = progressAdapter
+
+            val titleTextView = dialogView.findViewById<TextView>(R.id.tvTitleProgressBarLayout)
+            val counterTextView = dialogView.findViewById<TextView>(R.id.counter_dataset)
+            counterTextView.text = "0 / $apiCallsSize"
+
+            lifecycleScope.launch(Dispatchers.Main) {
+                var dots = 0
+                while (alertDialog.isShowing) {
+                    titleTextView.text = "Mengunduh Dataset" + ".".repeat(dots)
+                    dots = if (dots >= 4) 1 else dots + 1
+                    delay(500)
+                }
+            }
+
+            for (i in 0 until apiCallsSize) {
+                withContext(Dispatchers.Main) {
+                    progressAdapter.updateProgress(i, 0, "Menunggu", R.id.progress_circular_loading)
+                }
+            }
+
+            var completedCount = 0
+            val downloadsDir = this@HomeActivity.getExternalFilesDir(null)
+
+            for ((index, apiCall) in filesToDownload.withIndex()) {
+                val fileName = apiCall.first
+
+
+                val apiCallFunction = apiCall.second
+                val originalIndex = AppUtils.ApiCallManager.apiCallList.indexOfFirst { it.first == fileName }
+
+                withContext(Dispatchers.Main) {
+                    progressAdapter.resetProgress(index)
+                    progressAdapter.updateProgress(index, 0, "Sedang Mengunduh", R.id.progress_circular_loading)
+                }
+
+                for (progress in 0..100 step 10) {
+                    withContext(Dispatchers.Main) {
+                        progressAdapter.updateProgress(index, progress, "Sedang Mengunduh", R.id.progress_circular_loading)
+                    }
+                }
+
+                val (isSuccessful, message) = downloadFile(fileName, apiCallFunction, downloadsDir, savedFileList)
+
+                if (isSuccessful) {
+                    completedCount++
+                    withContext(Dispatchers.Main) {
+                        progressAdapter.updateProgress(index, 100, message, R.drawable.baseline_check_24)
+                    }
+                    savedFileList[originalIndex] = fileName
+                } else {
+                    withContext(Dispatchers.Main) {
+                        progressAdapter.updateProgress(index, 100, message, R.drawable.baseline_close_24)
+                    }
+                    savedFileList[originalIndex] = null
+                }
+
+                withContext(Dispatchers.Main) {
+                    counterTextView.text = "$completedCount / $apiCallsSize"
+                }
+            }
+            val cleanedList = savedFileList.toMutableList()
+            for (i in cleanedList.indices.reversed()) {
+                val fileName = cleanedList[i]
+                if (fileName != null) {
+                    // Check if this fileName appears earlier in the list
+                    val firstIndex = cleanedList.indexOf(fileName)
+                    if (firstIndex != i) {
+                        // If found earlier, remove this duplicate
+                        cleanedList.removeAt(i)
+                    }
+                }
+            }
+
+            prefManager!!.saveFileList(cleanedList)
+            val closeText = dialogView.findViewById<TextView>(R.id.close_progress_statement)
+            closeText.visibility = View.VISIBLE
+
+            for (i in 3 downTo 1) {
+                withContext(Dispatchers.Main) {
+                    closeText.text = "Dialog tertutup otomatis dalam ${i} detik"
+                    delay(1000)
+                }
+            }
+
+            alertDialog.dismiss()
+        }
+    }
+
+    private suspend fun downloadFile(
+        fileName: String,
+        apiCall: suspend () -> Response<ResponseBody>,
+        downloadsDir: File?,
+        fileList: MutableList<String?>
+    ): Pair<Boolean, String> {  // Changed return type to include message
+        return try {
+            withContext(Dispatchers.IO) {
+                val response = apiCall()
+                if (response.isSuccessful) {
+                    val responseBody = response.body()
+                    if (responseBody != null) {
+                        val file = File(downloadsDir, fileName)
+                        saveFileToStorage(responseBody, file)
+                        fileList.add(fileName)
+                        Log.d("FileDownload", "$fileName downloaded successfully.")
+                        Pair(true, "Unduh Selesai")
+                    } else {
+                        fileList.add(null)
+                        Log.e("FileDownload", "Response body is null.")
+                        Pair(false, "Response body kosong")
+                    }
+                } else {
+                    fileList.add(null)
+                    try {
+                        val errorBody = response.errorBody()?.string()
+                        val gson = Gson()
+                        val errorResponse = gson.fromJson(errorBody, ErrorResponse::class.java)
+                        Log.e("FileDownload", "Error message: ${errorResponse.message}")
+                        Pair(false, "Unduh Gagal! ${errorResponse.message}")  // Added prefix here
+                    } catch (e: Exception) {
+                        Pair(false, "Unduh Gagal! Kode: ${response.code()}")  // Added prefix here
+                    }
+                }
+            }
+        } catch (e: Exception) {
+            fileList.add(null)
+            Log.e("FileDownload", "Error downloading file: ${e.message}")
+            Pair(false, "Unduh Gagal! ${e.message}")  // Added prefix here
+        }
+    }
+
+    private fun saveFileToStorage(body: ResponseBody, file: File): Boolean {
+        return try {
+            body.byteStream().use { inputStream ->
+                FileOutputStream(file).use { outputStream ->
+                    inputStream.copyTo(outputStream)
+                }
+            }
+            true
+        } catch (e: Exception) {
+            Log.e("FileDownload", "Error saving file: ${e.message}")
+            false
+        }
+    }
+
+    private fun shouldStartFileDownload(): Boolean {
+        val savedFileList = prefManager!!.getFileList() // Retrieve the saved file list
+        val downloadsDir = this.getExternalFilesDir(null) // Get the downloads directory
+
+        Log.d("FileCheck", "Saved file list: $savedFileList")
+        Log.d("FileCheck", "Downloads directory: $downloadsDir")
+        Log.d("FileCheck", "Is first time launch: ${prefManager!!.isFirstTimeLaunch}")
+
+        if (prefManager!!.isFirstTimeLaunch) {
+            Log.d("FileCheck", "First time launch detected.")
+            prefManager!!.isFirstTimeLaunch = false
+            return true
+        }
+
+        if (savedFileList.isNotEmpty()) {
+            if (savedFileList.contains(null)) {
+                Log.e("FileCheck", "Null entries found in savedFileList.")
+                return true
+            }
+
+            val missingFiles = savedFileList.filterNot { fileName ->
+                val file = File(downloadsDir, fileName)
+                val exists = file.exists()
+                Log.d("FileCheck", "Checking file: ${file.path} -> Exists: $exists")
+                fileName != null && exists
+            }
+
+            if (missingFiles.isNotEmpty()) {
+                Log.e("FileCheck", "Missing files detected: $missingFiles")
+                return true
+            }
+        } else {
+            Log.d("FileCheck", "Saved file list is empty.")
+        }
+
+        return false
+    }
+
+    private fun checkPermissions() {
+        val permissionsToRequest = mutableListOf<String>()
+
+        for (permission in requiredPermissions) {
+            if (ContextCompat.checkSelfPermission(this, permission) != PackageManager.PERMISSION_GRANTED) {
+                permissionsToRequest.add(permission)
+            }
+        }
+
+        if (permissionsToRequest.isNotEmpty()) {
+            ActivityCompat.requestPermissions(
+                this,
+                permissionsToRequest.toTypedArray(),
+                permissionRequestCode
+            )
+        }else{
+            if (shouldStartFileDownload()) {
+                Log.d("FileCheck", "Starting file download...")
+                startFileDownload()
+            } else {
+                Log.d("FileCheck", "File download not required.")
+            }
+        }
+    }
+
+
+
     override fun onPause() {
         super.onPause()
         locationViewModel.stopLocationUpdates()
+
+        LocationServices.getFusedLocationProviderClient(this)
+            .removeLocationUpdates(locationSettingsCallback)
     }
 
     override fun onDestroy() {
         super.onDestroy()
         locationViewModel.stopLocationUpdates()
+        unregisterReceiver(locationSettingsReceiver)
+    }
+
+
+    override fun onRequestPermissionsResult(
+        requestCode: Int, permissions: Array<out String>, grantResults: IntArray
+    ) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults)
+
+        if (requestCode == permissionRequestCode) {
+            val deniedPermissions = mutableListOf<String>()
+            for (i in permissions.indices) {
+                if (grantResults[i] != PackageManager.PERMISSION_GRANTED) {
+                    deniedPermissions.add(permissions[i])
+                }
+            }
+
+            if (deniedPermissions.isNotEmpty()) {
+                Toast.makeText(
+                    this,
+                    "The following permissions are required: ${deniedPermissions.joinToString()}",
+                    Toast.LENGTH_LONG
+                ).show()
+            }else {
+                if (shouldStartFileDownload()) {
+                    Log.d("FileCheck", "Starting file download...")
+                    startFileDownload()
+                } else {
+                    Log.d("FileCheck", "File download not required.")
+                }
+            }
+        }
     }
 }

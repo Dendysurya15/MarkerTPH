@@ -38,6 +38,9 @@
     <string name="al_location_under_ten_meter">Harap tunggu hingga akurasi GPS dibawah 10 meter!</string>
     <string name="al_confirm_out">Apakah anda yakin untuk keluar dari aplikasi MobilePro?</string>
 
+    <string name="al_no_internet_connection_description_download_dataset">Pastikan perangkat terhubung agar dapat mengunduh dataset aplikasi!</string>
+    <string name="al_location_disabled">Location Services Disabled</string>
+    <string name="al_enable_location_services">Please enable location services to continue using the app</string>
 
     <!--    toast-->
     <string name="toast_failed_save_local">Data gagal disimpan!</string>

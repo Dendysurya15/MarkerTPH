@@ -2,12 +2,42 @@ package com.cbi.markertph.utils
 
 import android.content.Context
 import android.content.SharedPreferences
+import com.google.gson.Gson
+import com.google.gson.reflect.TypeToken
 
 class PrefManager(_context: Context) {
     private var pref: SharedPreferences
     private var editor: SharedPreferences.Editor
     var privateMode = 0
 
+    fun saveFileList(fileList: List<String?>) {
+        val json = Gson().toJson(fileList)
+        editor.putString("downloaded_file_list", json)
+        editor.apply()
+    }
+
+    // Retrieve the list of files
+    fun getFileList(): List<String?> {
+        val json = pref.getString("downloaded_file_list", "[]")
+        return try {
+            val type = object : TypeToken<List<String?>>() {}.type
+            Gson().fromJson(json, type) ?: emptyList()
+        } catch (e: Exception) {
+            emptyList()
+        }
+    }
+
+    // Clear the file list
+    fun clearFileList() {
+        editor.remove("downloaded_file_list").apply()
+    }
+
+    var isFirstTimeLaunch: Boolean
+        get() = pref.getBoolean("IsFirstTimeLaunch", true)  // Default is true
+        set(isFirstTime) {
+            editor.putBoolean("IsFirstTimeLaunch", isFirstTime)
+            editor.apply()  // Use apply() instead of commit() for async write
+        }
 
     var version: Int
         get() = pref.getInt(version_tag, 0)

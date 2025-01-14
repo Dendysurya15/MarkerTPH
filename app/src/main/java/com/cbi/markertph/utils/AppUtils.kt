@@ -10,6 +10,7 @@ import android.widget.TextView
 import android.widget.Toast
 import androidx.fragment.app.Fragment
 import com.cbi.markertph.R
+import com.cbi.markertph.data.network.RetrofitClient
 
 object AppUtils {
 
@@ -19,6 +20,16 @@ object AppUtils {
     const val LOG_LOC = "locationLog"
 
     const val REQUEST_CHECK_SETTINGS = 0x1
+
+    object ApiCallManager {
+        val apiCallList = listOf(
+            Pair("datasetCompanyCode.zip", RetrofitClient.instance::downloadDatasetCompany),
+            Pair("datasetBUnitCode.zip", RetrofitClient.instance::downloadDatasetBUnit),
+            Pair("datasetDivisionCode.zip", RetrofitClient.instance::downloadDatasetDivision),
+            Pair("datasetFieldCode.zip", RetrofitClient.instance::downloadDatasetField),
+            Pair("datasetTPHCode.zip", RetrofitClient.instance::downloadDatasetTPH),
+        )
+    }
     /**
      * Gets the current app version from BuildConfig or string resources.
      * @param context The context used to retrieve the string resource.
