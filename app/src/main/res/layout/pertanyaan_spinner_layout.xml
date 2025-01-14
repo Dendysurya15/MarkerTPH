@@ -14,7 +14,7 @@
         android:layout_height="match_parent"
         android:text="Loading.."
         android:fontFamily="@font/inter_medium"
-        android:id="@+id/tvPanenTBS"
+        android:id="@+id/tvTitleForm"
         android:textSize="17dp"
         android:gravity="center|left"
         tools:ignore="HardcodedText,RtlHardcoded"/>

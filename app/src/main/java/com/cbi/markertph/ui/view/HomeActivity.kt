@@ -325,7 +325,7 @@ class HomeActivity : AppCompatActivity() {
                 tvError.visibility = View.GONE
                 MCVSpinner.strokeColor = ContextCompat.getColor(root.context, R.color.graytextdark)
 
-                when (tvPanenTBS.text.toString()) {
+                when (tvTitleForm.text.toString()) {
                     stringXML(R.string.field_estate) -> {
                         selectedEstate = item.toString()
                         val selectedBUnitCode = bUnitCodesList.find { it.BUnitName == selectedEstate }?.BUnitCode
@@ -672,7 +672,7 @@ class HomeActivity : AppCompatActivity() {
 
 
     private fun updateTextInPertanyaan(layoutBinding: PertanyaanSpinnerLayoutBinding, text: String) {
-        layoutBinding.tvPanenTBS.text = text
+        layoutBinding.tvTitleForm.text = text
     }
 
     private fun showSnackbar(message: String) {
