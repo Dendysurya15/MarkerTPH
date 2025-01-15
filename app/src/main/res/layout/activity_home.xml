@@ -149,18 +149,27 @@
 
                     <include
                         layout="@layout/pertanyaan_spinner_layout"
+                        android:visibility="gone"
                         android:id="@+id/layoutAfdeling"/>
 
                     <include
                         layout="@layout/pertanyaan_spinner_layout"
+                        android:visibility="gone"
+                        android:id="@+id/layoutTahunTanam"/>
+
+                    <include
+                        layout="@layout/pertanyaan_spinner_layout"
+                        android:visibility="gone"
                         android:id="@+id/layoutBlok"/>
 
                     <include
                         layout="@layout/pertanyaan_spinner_layout"
+                        android:visibility="gone"
                         android:id="@+id/layoutAncak"/>
 
                     <include
                         layout="@layout/pertanyaan_spinner_layout"
+                        android:visibility="gone"
                         android:id="@+id/layoutTPH"/>
 
                     <com.google.android.material.button.MaterialButton
@@ -169,6 +178,8 @@
                         android:layout_marginTop="30dp"
                         android:layout_height="wrap_content"
                         android:text="Simpan Data"
+
+                        android:visibility="gone"
                         android:textSize="16dp"
                         android:fontFamily="@font/inter_regular"
                         app:backgroundTint="@color/greenDefault"

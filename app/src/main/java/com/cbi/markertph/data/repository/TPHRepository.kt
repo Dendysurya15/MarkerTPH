@@ -28,6 +28,7 @@ import com.cbi.markertph.data.database.DatabaseHelper.Companion.KEY_ESTATE_ID
 import com.cbi.markertph.data.database.DatabaseHelper.Companion.KEY_ID
 import com.cbi.markertph.data.database.DatabaseHelper.Companion.KEY_LAT
 import com.cbi.markertph.data.database.DatabaseHelper.Companion.KEY_LON
+import com.cbi.markertph.data.database.DatabaseHelper.Companion.KEY_TAHUN_TANAM
 import com.cbi.markertph.data.database.DatabaseHelper.Companion.KEY_TANGGAL
 import com.cbi.markertph.data.database.DatabaseHelper.Companion.KEY_TPH
 import com.cbi.markertph.data.database.DatabaseHelper.Companion.KEY_TPH_ID
@@ -430,6 +431,7 @@ class TPHRepository(context: Context) {
             put(DatabaseHelper.KEY_ESTATE_ID, data.id_estate)
             put(DatabaseHelper.KEY_AFDELING, data.afdeling)
             put(DatabaseHelper.KEY_AFDELING_ID, data.id_afdeling)
+            put(DatabaseHelper.KEY_TAHUN_TANAM, data.tahun_tanam)
             put(DatabaseHelper.KEY_BLOK, data.blok)
             put(DatabaseHelper.KEY_BLOK_ID, data.id_blok)
             put(DatabaseHelper.KEY_ANCAK, data.ancak)
@@ -467,6 +469,7 @@ class TPHRepository(context: Context) {
                     id_blok = it.getInt(it.getColumnIndexOrThrow(KEY_BLOK_ID)),
                     ancak = it.getString(it.getColumnIndexOrThrow(KEY_ANCAK)) ?: "",
                     id_ancak = it.getInt(it.getColumnIndexOrThrow(KEY_ANCAK_ID)),
+                    tahun_tanam =  it.getString(it.getColumnIndexOrThrow(KEY_TAHUN_TANAM)),
                     tph = it.getString(it.getColumnIndexOrThrow(KEY_TPH)) ?: "",
                     id_tph = it.getInt(it.getColumnIndexOrThrow(KEY_TPH_ID)),
                     latitude = it.getString(it.getColumnIndexOrThrow(KEY_LAT)) ?: "",

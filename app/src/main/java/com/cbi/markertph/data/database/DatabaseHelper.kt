@@ -27,6 +27,7 @@ class DatabaseHelper(context: Context):
         val KEY_TANGGAL = "tanggal"
         val KEY_AFDELING = "afdeling"
         val KEY_AFDELING_ID = "id_afdeling"
+        val KEY_TAHUN_TANAM = "KEY_TAHUN_TANAM"
         val KEY_BLOK = "blok"
         val KEY_BLOK_ID = "id_blok"
         val KEY_TPH = "tph"
@@ -65,57 +66,57 @@ class DatabaseHelper(context: Context):
 
     }
 
-    private val createTableCompanyCode = """
-        CREATE TABLE IF NOT EXISTS $DB_TABLE_COMPANY_CODE (
-            $KEY_COMPANY_CODE INTEGER,
-            $KEY_COMPANY_NAME VARCHAR
-        )
-        """.trimIndent()
-
-    private val createTableBUnitCode = """
-        CREATE TABLE IF NOT EXISTS $DB_TABLE_BUNIT_CODE (
-            $KEY_BUNIT_CODE INTEGER,
-            $KEY_BUNIT_NAME VARCHAR,
-            $KEY_COMPANY_CODE INTEGER
-        )
-        """.trimIndent()
-
-    private val createTableDivisionCode = """
-        CREATE TABLE IF NOT EXISTS $DB_TABLE_DIVISION_CODE (
-            $KEY_DIVISION_CODE INTEGER,
-            $KEY_DIVISION_NAME VARCHAR,
-            $KEY_BUNIT_CODE INTEGER
-        )
-        """.trimIndent()
-
-    private val createTableFieldCode = """
-        CREATE TABLE IF NOT EXISTS $DB_TABLE_FIELD_CODE (
-            $KEY_FIELD_CODE INTEGER,
-            $KEY_BUNIT_CODE INTEGER,
-            $KEY_DIVISION_CODE INTEGER,
-            $KEY_FIELD_NAME VARCHAR,
-            $KEY_FIELD_NUMBER VARCHAR,
-            $KEY_FIELD_LAND_AREA VARCHAR,
-            $KEY_PLANTING_YEAR INTEGER,
-            $KEY_INITIAL_NO_OF_PLANTS INTEGER,
-            $KEY_PLANTS_PER_HECTARE INTEGER,
-            $KEY_IS_MATURED VARCHAR
-        )
-        """.trimIndent()
-
-    private val createTableTPH = """
-        CREATE TABLE IF NOT EXISTS $DB_TABLE_TPH (
-            $KEY_ID INTEGER,
-            $KEY_COMPANY_CODE INTEGER,
-            $KEY_REGIONAL INTEGER,
-            $KEY_BUNIT_CODE INTEGER,
-            $KEY_DIVISION_CODE INTEGER,
-            $KEY_FIELD_CODE INTEGER,
-            $KEY_PLANTING_YEAR_TPH INTEGER,
-            $KEY_ANCAK INTEGER,
-            $KEY_TPH VARCHAR
-        )
-        """.trimIndent()
+//    private val createTableCompanyCode = """
+//        CREATE TABLE IF NOT EXISTS $DB_TABLE_COMPANY_CODE (
+//            $KEY_COMPANY_CODE INTEGER,
+//            $KEY_COMPANY_NAME VARCHAR
+//        )
+//        """.trimIndent()
+//
+//    private val createTableBUnitCode = """
+//        CREATE TABLE IF NOT EXISTS $DB_TABLE_BUNIT_CODE (
+//            $KEY_BUNIT_CODE INTEGER,
+//            $KEY_BUNIT_NAME VARCHAR,
+//            $KEY_COMPANY_CODE INTEGER
+//        )
+//        """.trimIndent()
+//
+//    private val createTableDivisionCode = """
+//        CREATE TABLE IF NOT EXISTS $DB_TABLE_DIVISION_CODE (
+//            $KEY_DIVISION_CODE INTEGER,
+//            $KEY_DIVISION_NAME VARCHAR,
+//            $KEY_BUNIT_CODE INTEGER
+//        )
+//        """.trimIndent()
+//
+//    private val createTableFieldCode = """
+//        CREATE TABLE IF NOT EXISTS $DB_TABLE_FIELD_CODE (
+//            $KEY_FIELD_CODE INTEGER,
+//            $KEY_BUNIT_CODE INTEGER,
+//            $KEY_DIVISION_CODE INTEGER,
+//            $KEY_FIELD_NAME VARCHAR,
+//            $KEY_FIELD_NUMBER VARCHAR,
+//            $KEY_FIELD_LAND_AREA VARCHAR,
+//            $KEY_PLANTING_YEAR INTEGER,
+//            $KEY_INITIAL_NO_OF_PLANTS INTEGER,
+//            $KEY_PLANTS_PER_HECTARE INTEGER,
+//            $KEY_IS_MATURED VARCHAR
+//        )
+//        """.trimIndent()
+//
+//    private val createTableTPH = """
+//        CREATE TABLE IF NOT EXISTS $DB_TABLE_TPH (
+//            $KEY_ID INTEGER,
+//            $KEY_COMPANY_CODE INTEGER,
+//            $KEY_REGIONAL INTEGER,
+//            $KEY_BUNIT_CODE INTEGER,
+//            $KEY_DIVISION_CODE INTEGER,
+//            $KEY_FIELD_CODE INTEGER,
+//            $KEY_PLANTING_YEAR_TPH INTEGER,
+//            $KEY_ANCAK INTEGER,
+//            $KEY_TPH VARCHAR
+//        )
+//        """.trimIndent()
 
 
     private val createTableKoordinatTPH = """
@@ -127,6 +128,7 @@ class DatabaseHelper(context: Context):
             $KEY_ESTATE_ID INTEGER,
            $KEY_AFDELING VARCHAR,
            $KEY_AFDELING_ID INTEGER,
+           $KEY_TAHUN_TANAM VARCHAR,
            $KEY_BLOK VARCHAR,
             $KEY_BLOK_ID INTEGER,
             $KEY_ANCAK VARCHAR,
@@ -142,11 +144,11 @@ class DatabaseHelper(context: Context):
 
     override fun onCreate(db: SQLiteDatabase?) {
         db?.execSQL(createTableKoordinatTPH)
-        db?.execSQL(createTableCompanyCode)
-        db?.execSQL(createTableBUnitCode)
-        db?.execSQL(createTableDivisionCode)
-        db?.execSQL(createTableTPH)
-        db?.execSQL(createTableFieldCode)
+//        db?.execSQL(createTableCompanyCode)
+//        db?.execSQL(createTableBUnitCode)
+//        db?.execSQL(createTableDivisionCode)
+//        db?.execSQL(createTableTPH)
+//        db?.execSQL(createTableFieldCode)
     }
 
     override fun onUpgrade(db: SQLiteDatabase, oldVersion: Int, newVersion: Int) {

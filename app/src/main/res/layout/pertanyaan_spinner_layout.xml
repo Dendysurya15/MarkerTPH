@@ -32,7 +32,7 @@
             >
 
             <com.jaredrummler.materialspinner.MaterialSpinner
-                android:id="@+id/spPanenTBS"
+                android:id="@+id/spHomeMarkerTPH"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 app:ms_text_color="@color/black"
@@ -52,7 +52,7 @@
                 />
 
             <EditText
-                android:id="@+id/etPanenTBS"
+                android:id="@+id/etHomeMarkerTPH"
                 android:visibility="gone"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"

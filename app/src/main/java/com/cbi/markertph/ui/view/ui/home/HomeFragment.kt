@@ -135,50 +135,51 @@ class HomeFragment : Fragment() {
                     "warning.json"
                 ) {
 
-                    val app_version = requireContext().getString(R.string.app_version)
-                    tphViewModel.insertPanenTBSVM(
-                        tanggal = SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.getDefault()).format(Date()),
-                        user_input = userInput,
-                        estate = selectedEstate,
-                        id_estate = selectedBUnitCodeValue ?: 0,
-                        afdeling = selectedAfdeling,
-                        id_afdeling = selectedDivisionCodeValue ?: 0,
-                        blok = selectedBlok,
-                        id_blok = selectedFieldCodeValue ?: 0,
-                        ancak = selectedAncak,
-                        id_ancak = 0,
-                        tph = selectedTPH,
-                        id_tph = 0,
-                        latitude = lat.toString(),
-                        longitude = lon.toString(),
-                        app_version = app_version
-                    )
-
-                    tphViewModel.insertDBTPH.observe(requireActivity()) { isInserted ->
-                        if (isInserted){
-                            AlertDialogUtility.alertDialogAction(
-                                requireContext(),
-                                stringXML(R.string.al_success_save_local),
-                                stringXML(R.string.al_description_success_save_local),
-                                "success.json"
-                                ) {
-
-                            }
-                        }else{
-                            AlertDialogUtility.alertDialogAction(
-                                requireContext(),
-                                stringXML(R.string.al_failed_save_local),
-                                stringXML(R.string.al_description_failed_save_local),
-                                "warning.json"
-                            ) {
-                            }
-                            Toast.makeText(
-                                requireContext(),
-                                stringXML(R.string.toast_failed_save_local),
-                                Toast.LENGTH_LONG
-                            ).show()
-                        }
-                    }
+//                    val app_version = requireContext().getString(R.string.app_version)
+//                    tphViewModel.insertPanenTBSVM(
+//                        tanggal = SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.getDefault()).format(Date()),
+//                        user_input = userInput,
+//                        estate = selectedEstate,
+//                        id_estate = selectedBUnitCodeValue ?: 0,
+//                        afdeling = selectedAfdeling,
+//                        id_afdeling = selectedDivisionCodeValue ?: 0,
+//                        tahun_tanam = selectedTahun,
+//                        blok = selectedBlok,
+//                        id_blok = selectedFieldCodeValue ?: 0,
+//                        ancak = selectedAncak,
+//                        id_ancak = 0,
+//                        tph = selectedTPH,
+//                        id_tph = 0,
+//                        latitude = lat.toString(),
+//                        longitude = lon.toString(),
+//                        app_version = app_version
+//                    )
+//
+//                    tphViewModel.insertDBTPH.observe(requireActivity()) { isInserted ->
+//                        if (isInserted){
+//                            AlertDialogUtility.alertDialogAction(
+//                                requireContext(),
+//                                stringXML(R.string.al_success_save_local),
+//                                stringXML(R.string.al_description_success_save_local),
+//                                "success.json"
+//                                ) {
+//
+//                            }
+//                        }else{
+//                            AlertDialogUtility.alertDialogAction(
+//                                requireContext(),
+//                                stringXML(R.string.al_failed_save_local),
+//                                stringXML(R.string.al_description_failed_save_local),
+//                                "warning.json"
+//                            ) {
+//                            }
+//                            Toast.makeText(
+//                                requireContext(),
+//                                stringXML(R.string.toast_failed_save_local),
+//                                Toast.LENGTH_LONG
+//                            ).show()
+//                        }
+//                    }
 
 
                 }
@@ -245,198 +246,198 @@ class HomeFragment : Fragment() {
         val savedTPHIndexSpinner = prefManager?.id_selected_tph ?: 0
 
         // Load all BUnit codes first
-        tphViewModel.getAllBUnitCodes().observe(this) { bUnitCodes ->
-            bUnitCodesList = bUnitCodes
-            val estateNames = bUnitCodes.map { it.BUnitName }
-            setupSpinnerView(binding.layoutEstate, estateNames)
-
-            if (savedEstateIndexSpinner >= 0 && savedEstateIndexSpinner < estateNames.size) {
-                binding.layoutEstate.spPanenTBS.setSelectedIndex(savedEstateIndexSpinner)
-                selectedBUnitSpinnerIndex = savedEstateIndexSpinner
-                selectedEstate = estateNames[savedEstateIndexSpinner]
-                selectedBUnitCodeValue = bUnitCodes[savedEstateIndexSpinner].BUnitCode
-
-                // Load division codes based on selected estate
-                tphViewModel.getDivisionCodesByBUnitCode(selectedBUnitCodeValue!!).observe(this) { divisionCodes ->
-                    divisionCodesList = divisionCodes
-                    val divisionNames = divisionCodes.map { it.DivisionName }
-                    setupSpinnerView(binding.layoutAfdeling, divisionNames)
-
-                    if (savedAfdelingIndexSpinner >= 0 && savedAfdelingIndexSpinner < divisionNames.size) {
-                        binding.layoutAfdeling.spPanenTBS.setSelectedIndex(savedAfdelingIndexSpinner)
-                        selectedDivisionSpinnerIndex = savedAfdelingIndexSpinner
-                        selectedAfdeling = divisionNames[savedAfdelingIndexSpinner]
-                        selectedDivisionCodeValue = divisionCodes[savedAfdelingIndexSpinner].DivisionCode
-
-                        // Load field codes based on selected division
-                        tphViewModel.getFieldCodesByBUnitAndDivision(selectedBUnitCodeValue!!, selectedDivisionCodeValue!!).observe(this) { fieldCodes ->
-                            fieldCodesList = fieldCodes
-                            val fieldNames = fieldCodes.map { it.FieldName }
-                            setupSpinnerView(binding.layoutBlok, fieldNames)
-
-                            if (savedBlockIndexSpinner >= 0 && savedBlockIndexSpinner < fieldNames.size) {
-                                binding.layoutBlok.spPanenTBS.setSelectedIndex(savedBlockIndexSpinner)
-                                selectedFieldCodeSpinnerIndex = savedBlockIndexSpinner
-                                selectedBlok = fieldNames[savedBlockIndexSpinner]
-                                selectedFieldCodeValue = fieldCodes[savedBlockIndexSpinner].FieldCode
-
-                                tphViewModel.getAncakByFieldCode(selectedBUnitCodeValue!!, selectedDivisionCodeValue!!, selectedFieldCodeValue!!).observe(this) { dataList ->
-                                    tphDataList = dataList
-                                    val ancakList = dataList.map { it.ancak.toString() }.distinct()
-                                    setupSpinnerView(binding.layoutAncak, ancakList)
-
-                                    if (savedAncakIndexSpinner >= 0 && savedAncakIndexSpinner < ancakList.size) {
-                                        binding.layoutAncak.spPanenTBS.setSelectedIndex(savedAncakIndexSpinner)
-                                        selectedAncakSpinnerIndex = savedAncakIndexSpinner
-                                        selectedAncak = ancakList[savedAncakIndexSpinner]
-
-                                        val filteredTPHList = tphDataList.filter { it.ancak.toString() == selectedAncak }
-                                        tphIds = filteredTPHList.map { it.id }
-
-                                        // Load TPH data based on selected ancak
-                                        tphViewModel.getTPHByAncakNumbers(selectedBUnitCodeValue!!, selectedDivisionCodeValue!!, selectedFieldCodeValue!!, tphIds).observe(this) { tphModels ->
-                                            val tphNames = tphModels.map { it.tph }.sortedBy { it.toIntOrNull() ?: Int.MAX_VALUE }
-                                            setupSpinnerView(binding.layoutTPH, tphNames)
-
-                                            if (savedTPHIndexSpinner >= 0 && savedTPHIndexSpinner < tphNames.size) {
-                                                binding.layoutTPH.spPanenTBS.setSelectedIndex(savedTPHIndexSpinner)
-                                                selectedTPHSpinnerIndex = savedTPHIndexSpinner
-                                                selectedTPH = tphNames[savedTPHIndexSpinner]
-                                            }
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-        }
+//        tphViewModel.getAllBUnitCodes().observe(this) { bUnitCodes ->
+//            bUnitCodesList = bUnitCodes
+//            val estateNames = bUnitCodes.map { it.BUnitName }
+//            setupSpinnerView(binding.layoutEstate, estateNames)
+//
+//            if (savedEstateIndexSpinner >= 0 && savedEstateIndexSpinner < estateNames.size) {
+//                binding.layoutEstate.spPanenTBS.setSelectedIndex(savedEstateIndexSpinner)
+//                selectedBUnitSpinnerIndex = savedEstateIndexSpinner
+//                selectedEstate = estateNames[savedEstateIndexSpinner]
+//                selectedBUnitCodeValue = bUnitCodes[savedEstateIndexSpinner].BUnitCode
+//
+//                // Load division codes based on selected estate
+//                tphViewModel.getDivisionCodesByBUnitCode(selectedBUnitCodeValue!!).observe(this) { divisionCodes ->
+//                    divisionCodesList = divisionCodes
+//                    val divisionNames = divisionCodes.map { it.DivisionName }
+//                    setupSpinnerView(binding.layoutAfdeling, divisionNames)
+//
+//                    if (savedAfdelingIndexSpinner >= 0 && savedAfdelingIndexSpinner < divisionNames.size) {
+//                        binding.layoutAfdeling.spPanenTBS.setSelectedIndex(savedAfdelingIndexSpinner)
+//                        selectedDivisionSpinnerIndex = savedAfdelingIndexSpinner
+//                        selectedAfdeling = divisionNames[savedAfdelingIndexSpinner]
+//                        selectedDivisionCodeValue = divisionCodes[savedAfdelingIndexSpinner].DivisionCode
+//
+//                        // Load field codes based on selected division
+//                        tphViewModel.getFieldCodesByBUnitAndDivision(selectedBUnitCodeValue!!, selectedDivisionCodeValue!!).observe(this) { fieldCodes ->
+//                            fieldCodesList = fieldCodes
+//                            val fieldNames = fieldCodes.map { it.FieldName }
+//                            setupSpinnerView(binding.layoutBlok, fieldNames)
+//
+//                            if (savedBlockIndexSpinner >= 0 && savedBlockIndexSpinner < fieldNames.size) {
+//                                binding.layoutBlok.spPanenTBS.setSelectedIndex(savedBlockIndexSpinner)
+//                                selectedFieldCodeSpinnerIndex = savedBlockIndexSpinner
+//                                selectedBlok = fieldNames[savedBlockIndexSpinner]
+//                                selectedFieldCodeValue = fieldCodes[savedBlockIndexSpinner].FieldCode
+//
+//                                tphViewModel.getAncakByFieldCode(selectedBUnitCodeValue!!, selectedDivisionCodeValue!!, selectedFieldCodeValue!!).observe(this) { dataList ->
+//                                    tphDataList = dataList
+//                                    val ancakList = dataList.map { it.ancak.toString() }.distinct()
+//                                    setupSpinnerView(binding.layoutAncak, ancakList)
+//
+//                                    if (savedAncakIndexSpinner >= 0 && savedAncakIndexSpinner < ancakList.size) {
+//                                        binding.layoutAncak.spPanenTBS.setSelectedIndex(savedAncakIndexSpinner)
+//                                        selectedAncakSpinnerIndex = savedAncakIndexSpinner
+//                                        selectedAncak = ancakList[savedAncakIndexSpinner]
+//
+//                                        val filteredTPHList = tphDataList.filter { it.ancak.toString() == selectedAncak }
+//                                        tphIds = filteredTPHList.map { it.id }
+//
+//                                        // Load TPH data based on selected ancak
+//                                        tphViewModel.getTPHByAncakNumbers(selectedBUnitCodeValue!!, selectedDivisionCodeValue!!, selectedFieldCodeValue!!, tphIds).observe(this) { tphModels ->
+//                                            val tphNames = tphModels.map { it.tph }.sortedBy { it.toIntOrNull() ?: Int.MAX_VALUE }
+//                                            setupSpinnerView(binding.layoutTPH, tphNames)
+//
+//                                            if (savedTPHIndexSpinner >= 0 && savedTPHIndexSpinner < tphNames.size) {
+//                                                binding.layoutTPH.spPanenTBS.setSelectedIndex(savedTPHIndexSpinner)
+//                                                selectedTPHSpinnerIndex = savedTPHIndexSpinner
+//                                                selectedTPH = tphNames[savedTPHIndexSpinner]
+//                                            }
+//                                        }
+//                                    }
+//                                }
+//                            }
+//                        }
+//                    }
+//                }
+//            }
+//        }
     }
 
     // Modified setupSpinnerView to handle selection changes properly
     private fun setupSpinnerView(layoutBinding: PertanyaanSpinnerLayoutBinding, data: List<String>) {
-        with(layoutBinding) {
-            spPanenTBS.visibility = View.VISIBLE
-            etPanenTBS.visibility = View.GONE
-
-            spPanenTBS.setItems(data)
-            spPanenTBS.setOnItemSelectedListener { _, position, _, item ->
-                tvError.visibility = View.GONE
-                MCVSpinner.strokeColor = ContextCompat.getColor(root.context, R.color.graytextdark)
-
-                when (tvTitleForm.text.toString()) {
-                    stringXML(R.string.field_estate) -> {
-                        selectedEstate = item.toString()
-                        val selectedBUnitCode = bUnitCodesList.find { it.BUnitName == selectedEstate }?.BUnitCode
-                        selectedBUnitCodeValue = selectedBUnitCode
-                        selectedBUnitSpinnerIndex = position
-
-                        // Clear dependent spinners
-                        setupSpinnerView(binding.layoutAfdeling, emptyList())
-                        setupSpinnerView(binding.layoutBlok, emptyList())
-                        setupSpinnerView(binding.layoutAncak, emptyList())
-                        setupSpinnerView(binding.layoutTPH, emptyList())
-
-                        selectedAfdeling = ""
-                        selectedDivisionCodeValue = null
-                        selectedDivisionSpinnerIndex = null
-
-                        selectedBlok = ""
-                        selectedFieldCodeValue = null
-                        selectedFieldCodeSpinnerIndex = null
-
-                        selectedAncak = ""
-                        selectedAncakInt = null
-                        selectedAncakSpinnerIndex = null
-
-                        selectedTPH = ""
-                        selectedTPHInt = null
-                        selectedTPHSpinnerIndex = null
-
-                        selectedBUnitCode?.let { code ->
-                            loadDivisionCodes(code)
-                        }
-                    }
-                    stringXML(R.string.field_afdeling) -> {
-                        selectedAfdeling = item.toString()
-                        val selectedDivisionCode = divisionCodesList.find { it.DivisionName == selectedAfdeling }?.DivisionCode
-                        selectedDivisionCodeValue = selectedDivisionCode
-                        selectedDivisionSpinnerIndex = position
-
-                        // Clear dependent spinners
-                        setupSpinnerView(binding.layoutBlok, emptyList())
-                        setupSpinnerView(binding.layoutAncak, emptyList())
-                        setupSpinnerView(binding.layoutTPH, emptyList())
-
-                        selectedBlok = ""
-                        selectedFieldCodeValue = null
-                        selectedFieldCodeSpinnerIndex = null
-
-                        selectedAncak = ""
-                        selectedAncakInt = null
-                        selectedAncakSpinnerIndex = null
-
-                        selectedTPH = ""
-                        selectedTPHInt = null
-                        selectedTPHSpinnerIndex = null
-
-                        if (selectedBUnitCodeValue != null && selectedDivisionCode != null) {
-                            loadFieldCodes(selectedBUnitCodeValue!!, selectedDivisionCode)
-                        }
-                    }
-                    stringXML(R.string.field_blok) -> {
-                        selectedBlok = item.toString()
-                        selectedFieldCodeSpinnerIndex = position
-                        selectedFieldCodeValue = fieldCodesList.find { it.FieldName == selectedBlok }?.FieldCode
-
-                        // Clear dependent spinners
-                        setupSpinnerView(binding.layoutAncak, emptyList())
-                        setupSpinnerView(binding.layoutTPH, emptyList())
-
-                        selectedAncak = ""
-                        selectedAncakInt = null
-                        selectedAncakSpinnerIndex = null
-
-                        selectedTPH = ""
-                        selectedTPHInt = null
-                        selectedTPHSpinnerIndex = null
-
-                        if (selectedBUnitCodeValue != null && selectedDivisionCodeValue != null && selectedFieldCodeValue != null) {
-                            loadAncakData(selectedBUnitCodeValue!!, selectedDivisionCodeValue!!, selectedFieldCodeValue!!)
-                        }
-                    }
-                    stringXML(R.string.field_ancak) -> {
-                        selectedAncak = item.toString()
-                        selectedAncakSpinnerIndex = position
-                        selectedAncakInt = position
-
-                        // Clear TPH spinner
-                        setupSpinnerView(binding.layoutTPH, emptyList())
-
-                        selectedTPH = ""
-                        selectedTPHInt = null
-                        selectedTPHSpinnerIndex = null
-
-                        try {
-                            val filteredTPHList = tphDataList.filter { it.ancak.toString() == selectedAncak }
-                            tphIds = filteredTPHList.map { it.id }
-
-                            if (selectedBUnitCodeValue != null && selectedDivisionCodeValue != null && selectedFieldCodeValue != null && tphIds.isNotEmpty()) {
-                                loadTPHData(selectedBUnitCodeValue!!, selectedDivisionCodeValue!!, selectedFieldCodeValue!!, tphIds)
-                            }
-                        } catch (e: Exception) {
-                            Log.e("TPH_LIFECYCLE", "Error in ancak selection", e)
-                        }
-                    }
-                    stringXML(R.string.field_tph) -> {
-                        selectedTPH = item.toString()
-                        selectedTPHInt = position
-                        selectedTPHSpinnerIndex = position
-                    }
-                }
-            }
-        }
+//        with(layoutBinding) {
+//            spPanenTBS.visibility = View.VISIBLE
+//            etPanenTBS.visibility = View.GONE
+//
+//            spPanenTBS.setItems(data)
+//            spPanenTBS.setOnItemSelectedListener { _, position, _, item ->
+//                tvError.visibility = View.GONE
+//                MCVSpinner.strokeColor = ContextCompat.getColor(root.context, R.color.graytextdark)
+//
+//                when (tvTitleForm.text.toString()) {
+//                    stringXML(R.string.field_estate) -> {
+//                        selectedEstate = item.toString()
+//                        val selectedBUnitCode = bUnitCodesList.find { it.BUnitName == selectedEstate }?.BUnitCode
+//                        selectedBUnitCodeValue = selectedBUnitCode
+//                        selectedBUnitSpinnerIndex = position
+//
+//                        // Clear dependent spinners
+//                        setupSpinnerView(binding.layoutAfdeling, emptyList())
+//                        setupSpinnerView(binding.layoutBlok, emptyList())
+//                        setupSpinnerView(binding.layoutAncak, emptyList())
+//                        setupSpinnerView(binding.layoutTPH, emptyList())
+//
+//                        selectedAfdeling = ""
+//                        selectedDivisionCodeValue = null
+//                        selectedDivisionSpinnerIndex = null
+//
+//                        selectedBlok = ""
+//                        selectedFieldCodeValue = null
+//                        selectedFieldCodeSpinnerIndex = null
+//
+//                        selectedAncak = ""
+//                        selectedAncakInt = null
+//                        selectedAncakSpinnerIndex = null
+//
+//                        selectedTPH = ""
+//                        selectedTPHInt = null
+//                        selectedTPHSpinnerIndex = null
+//
+//                        selectedBUnitCode?.let { code ->
+//                            loadDivisionCodes(code)
+//                        }
+//                    }
+//                    stringXML(R.string.field_afdeling) -> {
+//                        selectedAfdeling = item.toString()
+//                        val selectedDivisionCode = divisionCodesList.find { it.DivisionName == selectedAfdeling }?.DivisionCode
+//                        selectedDivisionCodeValue = selectedDivisionCode
+//                        selectedDivisionSpinnerIndex = position
+//
+//                        // Clear dependent spinners
+//                        setupSpinnerView(binding.layoutBlok, emptyList())
+//                        setupSpinnerView(binding.layoutAncak, emptyList())
+//                        setupSpinnerView(binding.layoutTPH, emptyList())
+//
+//                        selectedBlok = ""
+//                        selectedFieldCodeValue = null
+//                        selectedFieldCodeSpinnerIndex = null
+//
+//                        selectedAncak = ""
+//                        selectedAncakInt = null
+//                        selectedAncakSpinnerIndex = null
+//
+//                        selectedTPH = ""
+//                        selectedTPHInt = null
+//                        selectedTPHSpinnerIndex = null
+//
+//                        if (selectedBUnitCodeValue != null && selectedDivisionCode != null) {
+//                            loadFieldCodes(selectedBUnitCodeValue!!, selectedDivisionCode)
+//                        }
+//                    }
+//                    stringXML(R.string.field_blok) -> {
+//                        selectedBlok = item.toString()
+//                        selectedFieldCodeSpinnerIndex = position
+//                        selectedFieldCodeValue = fieldCodesList.find { it.FieldName == selectedBlok }?.FieldCode
+//
+//                        // Clear dependent spinners
+//                        setupSpinnerView(binding.layoutAncak, emptyList())
+//                        setupSpinnerView(binding.layoutTPH, emptyList())
+//
+//                        selectedAncak = ""
+//                        selectedAncakInt = null
+//                        selectedAncakSpinnerIndex = null
+//
+//                        selectedTPH = ""
+//                        selectedTPHInt = null
+//                        selectedTPHSpinnerIndex = null
+//
+//                        if (selectedBUnitCodeValue != null && selectedDivisionCodeValue != null && selectedFieldCodeValue != null) {
+//                            loadAncakData(selectedBUnitCodeValue!!, selectedDivisionCodeValue!!, selectedFieldCodeValue!!)
+//                        }
+//                    }
+//                    stringXML(R.string.field_ancak) -> {
+//                        selectedAncak = item.toString()
+//                        selectedAncakSpinnerIndex = position
+//                        selectedAncakInt = position
+//
+//                        // Clear TPH spinner
+//                        setupSpinnerView(binding.layoutTPH, emptyList())
+//
+//                        selectedTPH = ""
+//                        selectedTPHInt = null
+//                        selectedTPHSpinnerIndex = null
+//
+//                        try {
+//                            val filteredTPHList = tphDataList.filter { it.ancak.toString() == selectedAncak }
+//                            tphIds = filteredTPHList.map { it.id }
+//
+//                            if (selectedBUnitCodeValue != null && selectedDivisionCodeValue != null && selectedFieldCodeValue != null && tphIds.isNotEmpty()) {
+//                                loadTPHData(selectedBUnitCodeValue!!, selectedDivisionCodeValue!!, selectedFieldCodeValue!!, tphIds)
+//                            }
+//                        } catch (e: Exception) {
+//                            Log.e("TPH_LIFECYCLE", "Error in ancak selection", e)
+//                        }
+//                    }
+//                    stringXML(R.string.field_tph) -> {
+//                        selectedTPH = item.toString()
+//                        selectedTPHInt = position
+//                        selectedTPHSpinnerIndex = position
+//                    }
+//                }
+//            }
+//        }
     }
 
     private fun loadDivisionCodes(bUnitCode: Int) {
@@ -481,63 +482,63 @@ class HomeFragment : Fragment() {
             return
         }
 
-        tphViewModel.getTPHByAncakNumbers(bUnitCode, divisionCode, fieldCode, tphIds)
-            .observe(viewLifecycleOwner) { tphModels ->
-                try {
-                    if (tphModels.isEmpty()) {
-
-                        binding.layoutTPH.spPanenTBS.setItems(emptyList<String>())
-                        return@observe
-                    }
-
-                    tphNames = tphModels.map { it.tph }
-                    Log.d("TPH_DEBUG", "Setting ${tphNames.size} items to spinner")
-
-                    if (view != null && isAdded) {
-                        binding.layoutTPH.spPanenTBS.setItems(tphNames)
-                    }
-                } catch (e: Exception) {
-                    Log.e("TPH_DEBUG", "Error in loadTPHData: ${e.message}")
-                }
-            }
+//        tphViewModel.getTPHByAncakNumbers(bUnitCode, divisionCode, fieldCode, tphIds)
+//            .observe(viewLifecycleOwner) { tphModels ->
+//                try {
+//                    if (tphModels.isEmpty()) {
+//
+//                        binding.layoutTPH.spPanenTBS.setItems(emptyList<String>())
+//                        return@observe
+//                    }
+//
+//                    tphNames = tphModels.map { it.tph }
+//                    Log.d("TPH_DEBUG", "Setting ${tphNames.size} items to spinner")
+//
+//                    if (view != null && isAdded) {
+//                        binding.layoutTPH.spPanenTBS.setItems(tphNames)
+//                    }
+//                } catch (e: Exception) {
+//                    Log.e("TPH_DEBUG", "Error in loadTPHData: ${e.message}")
+//                }
+//            }
     }
 
 
     private fun setupEditTextView(layoutBinding: PertanyaanSpinnerLayoutBinding) {
-        with(layoutBinding) {
-            spPanenTBS.visibility = View.GONE
-            etPanenTBS.visibility = View.VISIBLE
-
-            // Handle enter key
-            etPanenTBS.setOnEditorActionListener { v, actionId, event ->
-                if (actionId == EditorInfo.IME_ACTION_DONE) {
-                    // Hide keyboard
-                    val imm = requireContext().getSystemService(Context.INPUT_METHOD_SERVICE) as InputMethodManager
-                    imm.hideSoftInputFromWindow(v.windowToken, 0)
-
-                    binding.layoutEstate.spPanenTBS.requestFocus()
-                    true
-                } else {
-                    false
-                }
-            }
-
-            etPanenTBS.addTextChangedListener(object : TextWatcher {
-                override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
-                override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {
-                    tvError.visibility = View.GONE
-                    MCVSpinner.strokeColor = ContextCompat.getColor(root.context, R.color.graytextdark)
-
-                    when (layoutBinding) {
-                        binding.layoutUserInput -> {
-                            userInput = s.toString()
-                            Log.d("EditText", "UserInput updated: $userInput")
-                        }
-                    }
-                }
-                override fun afterTextChanged(s: Editable?) {}
-            })
-        }
+//        with(layoutBinding) {
+//            spPanenTBS.visibility = View.GONE
+//            etPanenTBS.visibility = View.VISIBLE
+//
+//            // Handle enter key
+//            etPanenTBS.setOnEditorActionListener { v, actionId, event ->
+//                if (actionId == EditorInfo.IME_ACTION_DONE) {
+//                    // Hide keyboard
+//                    val imm = requireContext().getSystemService(Context.INPUT_METHOD_SERVICE) as InputMethodManager
+//                    imm.hideSoftInputFromWindow(v.windowToken, 0)
+//
+//                    binding.layoutEstate.spPanenTBS.requestFocus()
+//                    true
+//                } else {
+//                    false
+//                }
+//            }
+//
+//            etPanenTBS.addTextChangedListener(object : TextWatcher {
+//                override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
+//                override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {
+//                    tvError.visibility = View.GONE
+//                    MCVSpinner.strokeColor = ContextCompat.getColor(root.context, R.color.graytextdark)
+//
+//                    when (layoutBinding) {
+//                        binding.layoutUserInput -> {
+//                            userInput = s.toString()
+//                            Log.d("EditText", "UserInput updated: $userInput")
+//                        }
+//                    }
+//                }
+//                override fun afterTextChanged(s: Editable?) {}
+//            })
+//        }
     }
 
     @SuppressLint("ResourceAsColor")
@@ -566,46 +567,46 @@ class HomeFragment : Fragment() {
 
         Log.d("Validation", "Starting validation for ${inputMappings.size} fields")
 
-        inputMappings.forEach { (layoutBinding, key, inputType) ->
-            Log.d("Validation", "Validating $key with type $inputType")
-
-            val isEmpty = when (inputType) {
-                InputType.SPINNER -> {
-                    when (layoutBinding) {
-                        binding.layoutEstate -> selectedEstate.isEmpty()
-                        binding.layoutAfdeling -> selectedAfdeling.isEmpty()
-                        binding.layoutBlok -> selectedBlok.isEmpty()
-
-                        binding.layoutAncak -> selectedAncak.isEmpty()
-                        else -> layoutBinding.spPanenTBS.selectedIndex == -1
-                    }
-                }
-                InputType.EDITTEXT -> {
-                    when (key) {
-                        "User Input" -> userInput.trim().isEmpty()
-                        else -> layoutBinding.etPanenTBS.text.toString().trim().isEmpty()
-                    }
-                }
-            }
-
-            if (isEmpty) {
-                layoutBinding.tvError.visibility = View.VISIBLE
-                layoutBinding.MCVSpinner.strokeColor = ContextCompat.getColor(
-                    requireContext(),
-                    R.color.colorRedDark
-                )
-                missingFields.add(key)
-                isValid = false
-                Log.d("Validation", "Field $key is empty")
-            } else {
-                layoutBinding.tvError.visibility = View.GONE
-                layoutBinding.MCVSpinner.strokeColor = ContextCompat.getColor(
-                    requireContext(),
-                    R.color.graytextdark
-                )
-                Log.d("Validation", "Field $key is valid")
-            }
-        }
+//        inputMappings.forEach { (layoutBinding, key, inputType) ->
+//            Log.d("Validation", "Validating $key with type $inputType")
+//
+//            val isEmpty = when (inputType) {
+//                InputType.SPINNER -> {
+//                    when (layoutBinding) {
+//                        binding.layoutEstate -> selectedEstate.isEmpty()
+//                        binding.layoutAfdeling -> selectedAfdeling.isEmpty()
+//                        binding.layoutBlok -> selectedBlok.isEmpty()
+//
+//                        binding.layoutAncak -> selectedAncak.isEmpty()
+//                        else -> layoutBinding.spPanenTBS.selectedIndex == -1
+//                    }
+//                }
+//                InputType.EDITTEXT -> {
+//                    when (key) {
+//                        "User Input" -> userInput.trim().isEmpty()
+//                        else -> layoutBinding.etPanenTBS.text.toString().trim().isEmpty()
+//                    }
+//                }
+//            }
+//
+//            if (isEmpty) {
+//                layoutBinding.tvError.visibility = View.VISIBLE
+//                layoutBinding.MCVSpinner.strokeColor = ContextCompat.getColor(
+//                    requireContext(),
+//                    R.color.colorRedDark
+//                )
+//                missingFields.add(key)
+//                isValid = false
+//                Log.d("Validation", "Field $key is empty")
+//            } else {
+//                layoutBinding.tvError.visibility = View.GONE
+//                layoutBinding.MCVSpinner.strokeColor = ContextCompat.getColor(
+//                    requireContext(),
+//                    R.color.graytextdark
+//                )
+//                Log.d("Validation", "Field $key is valid")
+//            }
+//        }
 
         if (!isValid) {
             requireContext().vibrate()

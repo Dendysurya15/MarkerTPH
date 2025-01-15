@@ -37,7 +37,7 @@ class TPHAdapter : RecyclerView.Adapter<TPHAdapter.TPHViewHolder>() {
             binding.tvItemTgl.text = indonesiaFormatter.format(date)
 
             // Concatenate estate, afdeling, block and TPH
-            val estateInfo = "${data[KEY_ESTATE]} (${data[KEY_AFDELING]})\n${data[KEY_BLOK]} - ${data[KEY_TPH]}"
+            val estateInfo = "${data[KEY_ESTATE]} (${data[KEY_AFDELING]})\n${data[KEY_BLOK]}\n No TPH : ${data[KEY_TPH]}"
             binding.tvItemEstateAfdeling.text = estateInfo
 
             // Concatenate latitude and longitude

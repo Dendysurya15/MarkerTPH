@@ -10,6 +10,7 @@ data class KoordinatTPHModel(
     val id_estate: Int,
     val afdeling: String,
     val id_afdeling: Int,
+    val tahun_tanam : String,
     val blok: String,
     val id_blok: Int,
     val ancak: String,

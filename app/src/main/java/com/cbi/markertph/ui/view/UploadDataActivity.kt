@@ -402,6 +402,7 @@ class UploadDataActivity : AppCompatActivity() {
 
     private fun observeData() {
         loadingDialog.show()
+        loadingDialog.setMessage("Loading data...")
         tphViewModel.loadDataAllTPH(currentArchiveState)
         tphViewModel.dataTPHAll.observe(this) { data ->
             if (data != null) {
