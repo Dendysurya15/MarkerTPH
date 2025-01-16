@@ -27,11 +27,12 @@ class DatabaseHelper(context: Context):
         val KEY_TANGGAL = "tanggal"
         val KEY_AFDELING = "afdeling"
         val KEY_AFDELING_ID = "id_afdeling"
-        val KEY_TAHUN_TANAM = "KEY_TAHUN_TANAM"
+        val KEY_TAHUN_TANAM = "tahun_tanam"
         val KEY_BLOK = "blok"
         val KEY_BLOK_ID = "id_blok"
         val KEY_TPH = "tph"
         val KEY_TPH_ID = "id_tph"
+        val KEY_PANEN_ULANG = "panen_ulang"
         val KEY_ANCAK = "ancak"
         val KEY_ANCAK_ID = "id_ancak"
         val KEY_LAT = "latitude"
@@ -135,6 +136,7 @@ class DatabaseHelper(context: Context):
             $KEY_ANCAK_ID INTEGER,
            $KEY_TPH VARCHAR,
            $KEY_TPH_ID INTEGER,
+           $KEY_PANEN_ULANG INTEGER,
             $KEY_LAT VARCHAR,
             $KEY_LON VARCHAR,
             $DB_ARCHIVE INTEGER,

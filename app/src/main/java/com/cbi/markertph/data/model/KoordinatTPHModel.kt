@@ -17,8 +17,10 @@ data class KoordinatTPHModel(
     val id_ancak: Int,
     val tph: String,
     val id_tph: Int,
+    val panen_ulang:Int,
     val latitude: String,
     val longitude: String,
     val archive:Int,
     val app_version:String,
+
 )

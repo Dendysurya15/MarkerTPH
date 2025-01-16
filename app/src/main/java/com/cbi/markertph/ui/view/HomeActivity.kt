@@ -31,8 +31,10 @@ import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
+import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.lifecycleScope
+import androidx.lifecycle.repeatOnLifecycle
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.cbi.markertph.R
@@ -110,10 +112,8 @@ class HomeActivity : AppCompatActivity() {
     private var selectedFieldCodeValue: Int? = null
     private var selectedAncakValue: Int? = null
     private var selectedTPHValue: Int? = null
-    private var selectedAncakInt: Int? = null
-    private var selectedTPHInt: Int? = null
     private var selectedIDTPHAncak: Int? = null
-    private var deviceIMEI: String? = null
+
 
     private val locationSettingsCallback = object : LocationCallback() {
         override fun onLocationAvailability(locationAvailability: LocationAvailability) {
@@ -201,7 +201,7 @@ class HomeActivity : AppCompatActivity() {
             if (isGranted) {
                 locationViewModel.startLocationUpdates()
             } else {
-                showSnackbar(getString(R.string.location_permission_denied))
+//                showSnackbar(getString(R.string.location_permission_denied))
             }
         }
 
@@ -213,9 +213,10 @@ class HomeActivity : AppCompatActivity() {
         dataCacheManager = DataCacheManager(this)
         loadingDialog = LoadingDialog(this)
         initViewModel()
+        checkPermissions()
         setupLayout()
         setAppVersion()
-        checkPermissions()
+
         getDeviceInfo(this)
 
 
@@ -269,9 +270,11 @@ class HomeActivity : AppCompatActivity() {
                         id_ancak = selectedIDTPHAncak!!,
                         tph = selectedTPH,
                         id_tph = selectedIDTPHAncak!!,
+                        panen_ulang = 0,
                         latitude = lat.toString(),
                         longitude = lon.toString(),
-                        app_version = app_version.toString()
+                        app_version = app_version.toString(),
+
                     )
 
                     tphViewModel.insertDBTPH.observe(this) { isInserted ->
@@ -282,12 +285,13 @@ class HomeActivity : AppCompatActivity() {
                                 getString(R.string.al_description_success_save_local),
                                 "success.json"
                             ) {
-//                                prefManager!!.user_input = userInput
-//                                prefManager!!.id_selected_estate = selectedBUnitSpinnerIndex
-//                                prefManager!!.id_selected_afdeling = selectedDivisionSpinnerIndex
-//                                prefManager!!.id_selected_blok = selectedFieldCodeSpinnerIndex
-//                                prefManager!!.id_selected_ancak = selectedAncakSpinnerIndex
-//                                prefManager!!.id_selected_tph = selectedTPHSpinnerIndex
+                                prefManager!!.user_input = userInput
+                                prefManager!!.id_selected_estate = selectedBUnitSpinnerIndex
+                                prefManager!!.id_selected_afdeling = selectedDivisionSpinnerIndex
+                                prefManager!!.id_selected_tahun_tanam = selectedTahunTanamValue
+                                prefManager!!.id_selected_blok = selectedFieldCodeSpinnerIndex
+                                prefManager!!.id_selected_ancak = selectedAncakSpinnerIndex
+                                prefManager!!.id_selected_tph = selectedTPHSpinnerIndex
                             }
                         } else {
                             AlertDialogUtility.alertDialogAction(
@@ -343,27 +347,215 @@ class HomeActivity : AppCompatActivity() {
             Triple(binding.layoutTPH, getString(R.string.field_tph), InputType.SPINNER)
         )
 
+        // First set up basic layout structure
+        inputMappings.forEach { (layoutBinding, key, inputType) ->
+            updateTextInPertanyaan(layoutBinding, key)
+            when (inputType) {
+                InputType.EDITTEXT -> setupEditTextView(layoutBinding)
+                InputType.SPINNER -> setupSpinnerView(layoutBinding, emptyList()) // Initialize empty first
+            }
+        }
+
         val savedEstateIndexSpinner = prefManager?.id_selected_estate ?: 0
         val savedAfdelingIndexSpinner = prefManager?.id_selected_afdeling ?: 0
+        val savedTahunTanamIndexSpinner = prefManager?.id_selected_tahun_tanam ?: 0
         val savedBlockIndexSpinner = prefManager?.id_selected_blok ?: 0
         val savedAncakIndexSpinner = prefManager?.id_selected_ancak ?: 0
         val savedTPHIndexSpinner = prefManager?.id_selected_tph ?: 0
 
-        inputMappings.forEach { (layoutBinding, key, inputType) ->
-            updateTextInPertanyaan(layoutBinding, key)
-            when (inputType) {
-                InputType.SPINNER -> {
-                    when (layoutBinding) {
-                        binding.layoutEstate -> {
-                            val estateOptions = bUnitCodeList.map { it.BUnitName } // Replace with your actual data
-                            setupSpinnerView(layoutBinding, estateOptions)
+//        Log.d("testing", "Estate Index: $savedEstateIndexSpinner")
+//        Log.d("testing", "Afdeling Index: $savedAfdelingIndexSpinner")
+//        Log.d("testing", "Block Index: $savedBlockIndexSpinner")
+//        Log.d("testing", "Ancak Index: $savedAncakIndexSpinner")
+//        Log.d("testing", "TPH Index: $savedTPHIndexSpinner")
+
+//        inputMappings.forEach { (layoutBinding, key, inputType) ->
+//            updateTextInPertanyaan(layoutBinding, key)
+//            when (inputType) {
+//                InputType.SPINNER -> {
+//                    when (layoutBinding) {
+//                        binding.layoutEstate -> {
+//                            val estateOptions = bUnitCodeList.map { it.BUnitName }
+//                            setupSpinnerView(layoutBinding, estateOptions)
+//
+//                            Log.d("testing", estateOptions.toString())
+//                            if (savedEstateIndexSpinner in estateOptions.indices) {
+//                                binding.layoutEstate.spHomeMarkerTPH.setSelectedIndex(savedEstateIndexSpinner)
+//                                selectedBUnitSpinnerIndex = savedEstateIndexSpinner
+//                                selectedEstate = estateOptions[savedEstateIndexSpinner]
+//                                selectedBUnitCodeValue = bUnitCodeList[savedEstateIndexSpinner].BUnitCode
+//
+//                                val afdelingOptions = divisionCodeList
+//                                    .filter { it.BUnitCode == selectedBUnitCodeValue }
+//                                    .map { it.DivisionName }
+//
+//                                Log.d("testing", "Afdeling Options: $afdelingOptions")
+//                                Log.d("testing", "Selected BUnitCode: $selectedBUnitCodeValue")
+//                                binding.layoutAfdeling.root.visibility = View.VISIBLE
+//                                setupSpinnerView(binding.layoutAfdeling, afdelingOptions)
+//
+//
+////                                 Handle Afdeling spinner saved selection
+//                                    if (savedAfdelingIndexSpinner in afdelingOptions.indices) {
+//                                        Log.d("testing", "Saved Afdeling Index: $savedAfdelingIndexSpinner")
+//                                        Log.d("testing", "Selected Afdeling: ${afdelingOptions[savedAfdelingIndexSpinner]}")
+//
+//                                        binding.layoutAfdeling.spHomeMarkerTPH.setSelectedIndex(savedAfdelingIndexSpinner)
+//                                        selectedDivisionSpinnerIndex = savedAfdelingIndexSpinner
+//                                        selectedAfdeling = afdelingOptions[savedAfdelingIndexSpinner]
+//                                        selectedDivisionCodeValue = divisionCodeList
+//                                            .filter { it.BUnitCode == selectedBUnitCodeValue }[savedAfdelingIndexSpinner].DivisionCode
+//
+//                                        Log.d("testing", "Selected DivisionCode: $selectedDivisionCodeValue")
+//
+//                                        // Get field codes for the selected division
+//                                        val fieldCodeOptions = fieldCodeList
+//                                            .filter {
+////                                                Log.d("testing", "Checking field: BUnit=${it.BUnitCode}==$selectedBUnitCodeValue, Division=${it.DivisionCode}==$selectedDivisionCodeValue")
+//                                                it.BUnitCode == selectedBUnitCodeValue &&
+//                                                        it.DivisionCode == selectedDivisionCodeValue
+//                                            }
+//                                            .map { it.FieldName }
+//
+//                                        Log.d("testing", "Field code list size: ${fieldCodeList.size}")
+//                                        Log.d("testing", "Filtered field options size: ${fieldCodeOptions.size}")
+//                                        Log.d("testing", "Field options: $fieldCodeOptions")
+//
+//                                        setupSpinnerView(binding.layoutBlok, fieldCodeOptions)
+//                                        binding.layoutBlok.root.visibility = View.VISIBLE
+//                                    } else {
+//                                        Log.d("testing", "Saved Afdeling index ($savedAfdelingIndexSpinner) out of bounds for options size ${afdelingOptions.size}")
+//                                    }
+//                            } else {
+//                                Log.d("testing", "Saved Estate index ($savedEstateIndexSpinner) out of bounds for options size ${estateOptions.size}")
+//                            }
+//                        }
+//                        else -> {
+//                            setupSpinnerView(layoutBinding, emptyList())
+//                        }
+//                    }
+//                }
+//                InputType.EDITTEXT -> setupEditTextView(layoutBinding)
+//            }
+//        }
+
+        lifecycleScope.launch {
+            // Wait until data is ready
+            lifecycle.repeatOnLifecycle(Lifecycle.State.STARTED) {
+                if (bUnitCodeList.isNotEmpty()) {
+                    val estateOptions = bUnitCodeList.map { it.BUnitName }
+                    setupSpinnerView(binding.layoutEstate, estateOptions)
+
+                    if (savedEstateIndexSpinner in estateOptions.indices) {
+                        binding.layoutEstate.spHomeMarkerTPH.setSelectedIndex(savedEstateIndexSpinner)
+                        selectedBUnitSpinnerIndex = savedEstateIndexSpinner
+                        selectedEstate = estateOptions[savedEstateIndexSpinner]
+                        selectedBUnitCodeValue = bUnitCodeList[savedEstateIndexSpinner].BUnitCode
+
+                        val afdelingOptions = divisionCodeList
+                            .filter { it.BUnitCode == selectedBUnitCodeValue }
+                            .map { it.DivisionName }
+
+                        binding.layoutAfdeling.root.visibility = View.VISIBLE
+                        setupSpinnerView(binding.layoutAfdeling, afdelingOptions)
+
+                        if (savedAfdelingIndexSpinner in afdelingOptions.indices) {
+                            binding.layoutAfdeling.spHomeMarkerTPH.setSelectedIndex(savedAfdelingIndexSpinner)
+                            selectedDivisionSpinnerIndex = savedAfdelingIndexSpinner
+                            selectedAfdeling = afdelingOptions[savedAfdelingIndexSpinner]
+                            selectedDivisionCodeValue = divisionCodeList
+                                .filter { it.BUnitCode == selectedBUnitCodeValue }[savedAfdelingIndexSpinner].DivisionCode
+
+                            // Now filter field codes for planting years
+                            val filteredFieldCodes = fieldCodeList.filter { fieldCode ->
+                                fieldCode.BUnitCode == selectedBUnitCodeValue &&
+                                        fieldCode.DivisionCode == selectedDivisionCodeValue
+                            }
+
+                            val plantingYears = filteredFieldCodes
+                                .map { it.PlantingYear.toString() }
+                                .distinct()
+                                .sorted()
+
+                            binding.layoutTahunTanam.root.visibility = View.VISIBLE
+
+                            setupSpinnerView(binding.layoutTahunTanam, plantingYears)
+
+                            val tahunTanamIndex = plantingYears.indexOf(savedTahunTanamIndexSpinner.toString())
+                            if (tahunTanamIndex != -1) {
+                                binding.layoutTahunTanam.spHomeMarkerTPH.setSelectedIndex(tahunTanamIndex)
+                                selectedTahunTanamValue = savedTahunTanamIndexSpinner.toString()
+
+                                // Filter field codes for selected planting year
+                                val fieldCodeOptions = fieldCodeList.filter { fieldCode ->
+                                    fieldCode.BUnitCode == selectedBUnitCodeValue &&
+                                            fieldCode.DivisionCode == selectedDivisionCodeValue &&
+                                            fieldCode.PlantingYear.toString() == selectedTahunTanamValue
+                                }.map { it.FieldName }
+
+                                binding.layoutBlok.root.visibility = View.VISIBLE
+                                setupSpinnerView(binding.layoutBlok, fieldCodeOptions)
+
+                                // Handle Block saved selection
+                                if (savedBlockIndexSpinner in fieldCodeOptions.indices) {
+                                    binding.layoutBlok.spHomeMarkerTPH.setSelectedIndex(savedBlockIndexSpinner)
+                                    selectedBlok = fieldCodeOptions[savedBlockIndexSpinner]
+                                    selectedFieldCodeSpinnerIndex = savedBlockIndexSpinner
+                                    selectedFieldCodeValue = fieldCodeList.find { it.FieldName == selectedBlok }?.FieldCode
+
+                                    // Filter TPH for Ancak
+                                    val filteredTPH = tphList?.filter { tph ->
+                                        tph.BUnitCode == selectedBUnitCodeValue &&
+                                                tph.DivisionCode == selectedDivisionCodeValue &&
+                                                tph.planting_year == selectedTahunTanamValue!!.toInt() &&
+                                                tph.FieldCode == selectedFieldCodeValue
+                                    }
+
+                                    val ancakValues = filteredTPH?.map { it.ancak }?.distinct()?.map { it.toString() } ?: emptyList()
+
+                                    binding.layoutAncak.root.visibility = View.VISIBLE
+                                    setupSpinnerView(binding.layoutAncak, ancakValues)
+
+                                    if (savedAncakIndexSpinner in ancakValues.indices) {
+                                        binding.layoutAncak.spHomeMarkerTPH.setSelectedIndex(savedAncakIndexSpinner)
+                                        selectedAncak = ancakValues[savedAncakIndexSpinner]
+                                        selectedAncakSpinnerIndex = savedAncakIndexSpinner
+                                        selectedAncakValue = tphList?.find { tph ->
+                                            tph.BUnitCode == selectedBUnitCodeValue &&
+                                                    tph.DivisionCode == selectedDivisionCodeValue &&
+                                                    tph.planting_year == selectedTahunTanamValue?.toInt() &&
+                                                    tph.FieldCode == selectedFieldCodeValue &&
+                                                    tph.ancak.toString() == selectedAncak
+                                        }?.ancak
+
+                                        // Filter TPH values
+                                        val tphValues = filteredTPH
+                                            ?.filter { it.ancak == selectedAncakValue }
+                                            ?.map { it.tph.toString() }
+                                            ?.distinct() ?: emptyList()
+
+                                        binding.layoutTPH.root.visibility = View.VISIBLE
+                                        setupSpinnerView(binding.layoutTPH, tphValues)
+
+                                        if (savedTPHIndexSpinner in tphValues.indices) {
+                                            binding.layoutTPH.spHomeMarkerTPH.setSelectedIndex(savedTPHIndexSpinner)
+                                            selectedTPH = tphValues[savedTPHIndexSpinner]
+                                            selectedTPHSpinnerIndex = savedTPHIndexSpinner
+                                            selectedIDTPHAncak = filteredTPH?.firstOrNull {
+                                                it.ancak == selectedAncakValue &&
+                                                        it.tph.toString() == selectedTPH
+                                            }?.id
+
+                                            findViewById<MaterialButton>(R.id.mbSaveDataTPH).visibility = View.VISIBLE
+                                        }
+                                    }
+                                }
+                            }
                         }
-                        else -> {
-                            setupSpinnerView(layoutBinding, emptyList())
-                        }
+                    } else {
+                        Log.d("testing", "Saved Estate index ($savedEstateIndexSpinner) out of bounds for options size ${estateOptions.size}")
                     }
                 }
-                InputType.EDITTEXT -> setupEditTextView(layoutBinding)
             }
         }
 
@@ -545,8 +737,6 @@ class HomeActivity : AppCompatActivity() {
                         object : TypeToken<List<TPHModel>>() {}.type
                     )
 
-
-                    Log.d("testing", tphList.toString())
                 }
                 // Log the number of entries loaded
                 Log.d("ParsedData", "Loaded TPH data with ${tphList?.size} entries")
@@ -571,24 +761,13 @@ class HomeActivity : AppCompatActivity() {
                 when (tvTitleForm.text.toString()) {
                     stringXML(R.string.field_estate) -> {
 
-//                        selectedAfdeling = ""
-//                        selectedDivisionCodeValue = null
-//                        selectedDivisionSpinnerIndex = null
-//
-//                        selectedBlok = ""
-//                        selectedFieldCodeValue = null
-//                        selectedFieldCodeSpinnerIndex = null
-//
-//                        selectedAncak = ""
-//                        selectedAncakInt = null
-//                        selectedAncakSpinnerIndex = null
-//
-//                        selectedTPH = ""
-//                        selectedTPHInt = null
-//                        selectedTPHSpinnerIndex = null
-
                         resetViewsBelow(binding.layoutEstate)
                         selectedEstate = item.toString()
+
+                        Log.d("testing", selectedEstate.toString())
+                        val selectedBUnitCode = bUnitCodesList.find { it.BUnitName == selectedEstate }?.BUnitCode
+                        selectedBUnitCodeValue = selectedBUnitCode
+                        selectedBUnitSpinnerIndex = position
                         val selectedBUnit = bUnitCodeList.getOrNull(position)
                         selectedBUnit?.let { bUnit ->
                             val filteredDivisionCodes = divisionCodeList.filter { division ->
@@ -607,21 +786,11 @@ class HomeActivity : AppCompatActivity() {
                     }
                     stringXML(R.string.field_afdeling) -> {
                         resetViewsBelow(binding.layoutAfdeling)
-//
-//                        selectedBlok = ""
-//                        selectedFieldCodeValue = null
-//                        selectedFieldCodeSpinnerIndex = null
-//
-//                        selectedAncak = ""
-//                        selectedAncakInt = null
-//                        selectedAncakSpinnerIndex = null
-//
-//                        selectedTPH = ""
-//                        selectedTPHInt = null
-//                        selectedTPHSpinnerIndex = null
 
                         selectedAfdeling = item.toString()
+
                         val selectedDivisionCode = divisionCodeList.find { it.DivisionName == selectedAfdeling }?.DivisionCode
+                        selectedDivisionSpinnerIndex = position
                         selectedDivisionCodeValue = selectedDivisionCode ?: run {
                             // Handle the case where no matching DivisionCode is found
                             Log.e("Spinner", "No DivisionCode found for DivisionName: $selectedAfdeling")
@@ -672,15 +841,9 @@ class HomeActivity : AppCompatActivity() {
                     }
                     stringXML(R.string.field_blok) -> {
                         resetViewsBelow(binding.layoutBlok)
-//                        selectedAncak = ""
-//                        selectedAncakInt = null
-//                        selectedAncakSpinnerIndex = null
-//
-//                        selectedTPH = ""
-//                        selectedTPHInt = null
-//                        selectedTPHSpinnerIndex = null
 
                         selectedBlok = item.toString()
+                        selectedFieldCodeSpinnerIndex = position
                         val selectedFieldCode = fieldCodeList.find { it.FieldName == selectedBlok }?.FieldCode
                         selectedFieldCodeValue = selectedFieldCode ?: run {
                             null
@@ -709,10 +872,8 @@ class HomeActivity : AppCompatActivity() {
                     }
                     stringXML(R.string.field_ancak) -> {
 
-//                        selectedTPH = ""
-//                        selectedTPHInt = null
-//                        selectedTPHSpinnerIndex = null
                         selectedAncak = item.toString()
+                        selectedAncakSpinnerIndex = position
                         resetViewsBelow(binding.layoutAncak)
 
                         val selectedAncakCode = tphList?.find { tph ->
@@ -736,8 +897,6 @@ class HomeActivity : AppCompatActivity() {
                                     tph.ancak == selectedAncakValue
                         }
 
-                        Log.d("testing", filteredTPH.toString())
-
                         if (filteredTPH != null && filteredTPH.isNotEmpty()) {
 
                             val tphValues = filteredTPH.map { it.tph }.distinct()
@@ -753,7 +912,6 @@ class HomeActivity : AppCompatActivity() {
                     }
                     stringXML(R.string.field_tph) -> {
                         selectedTPH = item.toString()
-                        selectedTPHInt = position
                         selectedTPHSpinnerIndex = position
 
                         val filteredTPH = tphList?.filter { tph ->
@@ -913,12 +1071,6 @@ class HomeActivity : AppCompatActivity() {
         inputMappings.forEach { (layoutBinding, key, inputType) ->
             Log.d("Validation", "Validating $key with type $inputType")
 
-            Log.d("testing", selectedEstate)
-            Log.d("testing", selectedAfdeling)
-            Log.d("testing", selectedTahunTanamValue.toString())
-            Log.d("testing", selectedBlok.toString())
-            Log.d("testing", selectedAncak.toString())
-            Log.d("testing", selectedTPH.toString())
             val isEmpty = when (inputType) {
                 InputType.SPINNER -> {
                     when (layoutBinding) {
@@ -995,7 +1147,6 @@ class HomeActivity : AppCompatActivity() {
         json.put("os_version", Build.VERSION.RELEASE)
         json.put("device_model", Build.MODEL)
 
-        Log.d("testing", json.toString())
         return json
     }
 

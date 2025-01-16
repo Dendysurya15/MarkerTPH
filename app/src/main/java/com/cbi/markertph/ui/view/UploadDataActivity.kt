@@ -31,6 +31,8 @@ import com.cbi.markertph.data.database.DatabaseHelper.Companion.KEY_ESTATE_ID
 import com.cbi.markertph.data.database.DatabaseHelper.Companion.KEY_ID
 import com.cbi.markertph.data.database.DatabaseHelper.Companion.KEY_LAT
 import com.cbi.markertph.data.database.DatabaseHelper.Companion.KEY_LON
+import com.cbi.markertph.data.database.DatabaseHelper.Companion.KEY_PANEN_ULANG
+import com.cbi.markertph.data.database.DatabaseHelper.Companion.KEY_TAHUN_TANAM
 import com.cbi.markertph.data.database.DatabaseHelper.Companion.KEY_TANGGAL
 import com.cbi.markertph.data.database.DatabaseHelper.Companion.KEY_TPH
 import com.cbi.markertph.data.database.DatabaseHelper.Companion.KEY_TPH_ID
@@ -166,16 +168,24 @@ class UploadDataActivity : AppCompatActivity() {
         ) {
             loadingDialog.show()
 
+
+            Log.d("testing", selectedItems.toString())
             val uploadDataList = selectedItems.map {
                 UploadData(
                     id = it["id"] as Int,
                     datetime = it["tanggal"] as String,
-                    estate = it["estate"] as String,
                     user_input = it["user_input"] as String,
+                    estate = it["estate"] as String,
+                    id_estate = it["id_estate"] as Int,
                     afdeling = it["afdeling"] as String,
+                    id_afdeling = it["id_afdeling"] as Int,
+                    tahun_tanam = it["tahun_tanam"] as String,
                     blok = it["blok"] as String,
+                    id_blok = it["id_blok"] as Int,
                     ancak = it["ancak"] as String,
                     tph = it["tph"] as String,
+                    id_tph = it["id_tph"] as Int,
+                    panen_ulang = it["panen_ulang"] as Int,
                     lat = it["latitude"] as String,
                     lon = it["longitude"] as String,
                     app_version = it["app_version"] as String
@@ -264,6 +274,7 @@ class UploadDataActivity : AppCompatActivity() {
                     }
                     R.id.uploadSelected -> {
                         val selectedItems = tphAdapter.getSelectedItems()
+
                         if (AppUtils.isInternetAvailable(this@UploadDataActivity)) {
                             handleUpload(selectedItems)
                         } else {
@@ -418,12 +429,14 @@ class UploadDataActivity : AppCompatActivity() {
                         recordMap[KEY_ESTATE_ID] = safeRecord.id_estate ?: 0
                         recordMap[KEY_AFDELING] = safeRecord.afdeling ?: ""
                         recordMap[KEY_AFDELING_ID] = safeRecord.id_afdeling ?: 0
+                        recordMap[KEY_TAHUN_TANAM] = safeRecord.tahun_tanam ?: 0
                         recordMap[KEY_BLOK] = safeRecord.blok ?: ""
                         recordMap[KEY_BLOK_ID] = safeRecord.id_blok ?: 0
                         recordMap[KEY_ANCAK] = safeRecord.ancak ?: ""
                         recordMap[KEY_ANCAK_ID] = safeRecord.id_ancak ?: 0
                         recordMap[KEY_TPH] = safeRecord.tph ?: ""
                         recordMap[KEY_TPH_ID] = safeRecord.id_tph ?: 0
+                        recordMap[KEY_PANEN_ULANG] = safeRecord.panen_ulang ?: 0
                         recordMap[KEY_LAT] = safeRecord.latitude ?: ""
                         recordMap[KEY_LON] = safeRecord.longitude ?: ""
                         recordMap[KEY_APP_VERSION] = safeRecord.app_version ?: ""

@@ -438,6 +438,7 @@ class TPHRepository(context: Context) {
             put(DatabaseHelper.KEY_ANCAK_ID, data.id_ancak)
             put(DatabaseHelper.KEY_TPH, data.tph)
             put(DatabaseHelper.KEY_TPH_ID, data.id_tph)
+            put(DatabaseHelper.KEY_PANEN_ULANG, data.panen_ulang)
             put(DatabaseHelper.KEY_LAT, data.latitude)
             put(DatabaseHelper.KEY_LON, data.longitude)
             put(DatabaseHelper.DB_ARCHIVE, data.archive)
@@ -472,6 +473,7 @@ class TPHRepository(context: Context) {
                     tahun_tanam =  it.getString(it.getColumnIndexOrThrow(KEY_TAHUN_TANAM)),
                     tph = it.getString(it.getColumnIndexOrThrow(KEY_TPH)) ?: "",
                     id_tph = it.getInt(it.getColumnIndexOrThrow(KEY_TPH_ID)),
+                    panen_ulang = 0,
                     latitude = it.getString(it.getColumnIndexOrThrow(KEY_LAT)) ?: "",
                     longitude = it.getString(it.getColumnIndexOrThrow(KEY_LON)) ?: "",
                     archive = it.getInt(it.getColumnIndexOrThrow(DB_ARCHIVE)),
@@ -604,21 +606,21 @@ class TPHRepository(context: Context) {
                                         val storedData = responseData?.get("stored") as? List<*>
                                         val duplicateCount = dataList.size - (storedData?.size ?: 0)
 
-
                                         var successfulUpdates = 0
                                         dataList.forEach { data ->
                                             val wasStored = storedData?.any { stored ->
                                                 (stored as? Map<*, *>)?.let { map ->
-                                                    map["datetime"] == data.datetime &&
-                                                            map["user_input"] == data.user_input &&
-                                                    map["estate"] == data.estate &&
-                                                    map["afdeling"] == data.afdeling &&
-                                                            map["ancak"] == data.ancak &&
-                                                    map["blok"] == data.blok &&
-                                                    map["tph"] == data.tph
+
+                                                    map["BUnitCode"].toString() == data.id_estate.toString() &&
+                                                    map["DivisionCode"].toString() == data.id_afdeling.toString() &&
+                                                    map["planting_year"].toString() == data.tahun_tanam.toString() &&
+                                                    map["FieldCode"].toString() == data.id_blok.toString() &&
+                                                    map["ancak"].toString() == data.ancak.toString() &&
+                                                    map["tph"].toString() == data.tph.toString()
                                                 } ?: false
                                             } ?: false
-
+                                            Log.d("testing", "Final comparison result: $wasStored")
+                                            Log.d("testing", "For ID: ${data.id}")
                                             if (wasStored) {
                                                 updateArchiveStatus(data.id, 1)
                                                 successfulUpdates++

@@ -167,46 +167,46 @@ class UploadDataFragment : Fragment() {
 
             loadingDialog.show()
 
-            val uploadDataList = selectedItems.map {
-                UploadData(
-                    id = it["id"] as Int,
-                    datetime = it["tanggal"] as String,
-                    estate = it["estate"] as String,
-                    user_input = it["user_input"] as String,
-                    afdeling = it["afdeling"] as String,
-                    blok = it["blok"] as String,
-                    ancak = it["ancak"] as String,
-                    tph = it["tph"] as String,
-                    lat = it["latitude"] as String,
-                    lon = it["longitude"] as String,
-                    app_version = it["app_version"] as String
-                )
-            }
-
-
-            tphViewModel.uploadData(requireContext(), uploadDataList).observe(requireActivity()) { result ->
-                when {
-                    result.isSuccess -> {
-                        val responses = result.getOrNull()
-
-                        tphViewModel.loadDataAllTPH(currentArchiveState)
-                        tphViewModel.countDataArchive()
-                        tphViewModel.countDataNonArchive()
-
-                        loadingDialog.dismiss()
-                    }
-                    result.isFailure -> {
-                        // Handle failure
-                        val error = result.exceptionOrNull()
-                        Log.e("testing", "Failed to upload: ${error?.message}")
-
-                        // Show error message
-                        Toast.makeText(context, "${stringXML(R.string.al_failed_upload)} :${error?.message}", Toast.LENGTH_SHORT).show()
-
-                        loadingDialog.dismiss()
-                    }
-                }
-            }
+//            val uploadDataList = selectedItems.map {
+//                UploadData(
+//                    id = it["id"] as Int,
+//                    datetime = it["tanggal"] as String,
+//                    estate = it["estate"] as String,
+//                    user_input = it["user_input"] as String,
+//                    afdeling = it["afdeling"] as String,
+//                    blok = it["blok"] as String,
+//                    ancak = it["ancak"] as String,
+//                    tph = it["tph"] as String,
+//                    lat = it["latitude"] as String,
+//                    lon = it["longitude"] as String,
+//                    app_version = it["app_version"] as String
+//                )
+//            }
+//
+//
+//            tphViewModel.uploadData(requireContext(), uploadDataList).observe(requireActivity()) { result ->
+//                when {
+//                    result.isSuccess -> {
+//                        val responses = result.getOrNull()
+//
+//                        tphViewModel.loadDataAllTPH(currentArchiveState)
+//                        tphViewModel.countDataArchive()
+//                        tphViewModel.countDataNonArchive()
+//
+//                        loadingDialog.dismiss()
+//                    }
+//                    result.isFailure -> {
+//                        // Handle failure
+//                        val error = result.exceptionOrNull()
+//                        Log.e("testing", "Failed to upload: ${error?.message}")
+//
+//                        // Show error message
+//                        Toast.makeText(context, "${stringXML(R.string.al_failed_upload)} :${error?.message}", Toast.LENGTH_SHORT).show()
+//
+//                        loadingDialog.dismiss()
+//                    }
+//                }
+//            }
             tphAdapter.clearSelections()
 
         }

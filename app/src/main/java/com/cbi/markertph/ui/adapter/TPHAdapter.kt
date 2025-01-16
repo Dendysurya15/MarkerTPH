@@ -62,7 +62,6 @@ class TPHAdapter : RecyclerView.Adapter<TPHAdapter.TPHViewHolder>() {
         return selectAllState
     }
 
-    // Add methods to handle selections
     fun getSelectedItems(): List<Map<String, Any>> {
         return selectedItems.mapNotNull { position -> tphList.getOrNull(position) }
     }

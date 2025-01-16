@@ -19,7 +19,7 @@ interface ApiService {
         "Accept: application/json",
         "Content-Type: application/json"
     )
-    @POST("storeDataTPH")
+    @POST("storeDataTPHKoordinat")
     fun uploadData(@Body data: BatchUploadRequest): retrofit2.Call<UploadResponse>
 
     @GET("fetchRawDataTPH")

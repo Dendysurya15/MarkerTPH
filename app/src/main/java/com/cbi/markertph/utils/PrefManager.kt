@@ -67,6 +67,13 @@ class PrefManager(_context: Context) {
             editor.commit()
         }
 
+    var id_selected_tahun_tanam: String?
+        get() = pref.getString("id_selected_tahun_tanam", "")
+        set(hexDataWl) {
+            editor.putString("id_selected_tahun_tanam", hexDataWl!!)
+            editor.commit()
+        }
+
     var id_selected_blok: Int?
         get() = pref.getInt("id_selected_blok", 0)
         set(hexDataWl) {
