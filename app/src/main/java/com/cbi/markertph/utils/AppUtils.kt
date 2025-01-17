@@ -1,16 +1,25 @@
 package com.cbi.markertph.utils
 
+import android.Manifest
+import android.app.Activity
 import android.content.Context
 import android.net.ConnectivityManager
 import android.net.NetworkCapabilities
 import android.os.Build
 import android.os.VibrationEffect
 import android.os.Vibrator
+import android.webkit.PermissionRequest
 import android.widget.TextView
 import android.widget.Toast
+import androidx.annotation.RequiresApi
+import androidx.core.app.ActivityCompat
 import androidx.fragment.app.Fragment
 import com.cbi.markertph.R
 import com.cbi.markertph.data.network.RetrofitClient
+import com.karumi.dexter.Dexter
+import com.karumi.dexter.MultiplePermissionsReport
+import com.karumi.dexter.PermissionToken
+import com.karumi.dexter.listener.multi.MultiplePermissionsListener
 
 object AppUtils {
 
@@ -21,9 +30,39 @@ object AppUtils {
 
     const val REQUEST_CHECK_SETTINGS = 0x1
 
+    @RequiresApi(Build.VERSION_CODES.R)
+    fun checkGeneralPermissions(context: Context, activity: Activity) {
+        Dexter.withContext(context)
+            .withPermissions(
+                Manifest.permission.MANAGE_EXTERNAL_STORAGE,
+                Manifest.permission.WRITE_SETTINGS,
+                Manifest.permission.WRITE_SECURE_SETTINGS,
+                Manifest.permission.READ_EXTERNAL_STORAGE,
+                Manifest.permission.WRITE_EXTERNAL_STORAGE,
+                Manifest.permission.INTERNET,
+                Manifest.permission.READ_PHONE_STATE,
+                Manifest.permission.ACCESS_FINE_LOCATION, // Add fine location permission
+                Manifest.permission.ACCESS_COARSE_LOCATION // Add coarse location permission (optional)
+            ).withListener(object : MultiplePermissionsListener {
+                override fun onPermissionsChecked(report: MultiplePermissionsReport) {
+                }
+
+                override fun onPermissionRationaleShouldBeShown(
+                    permissions: List<com.karumi.dexter.listener.PermissionRequest>,
+                    token: PermissionToken
+                ) {
+                    ActivityCompat.shouldShowRequestPermissionRationale(
+                        activity,
+                        Manifest.permission.CAMERA
+                    )
+                }
+            }).check()
+
+    }
+
     object ApiCallManager {
         val apiCallList = listOf(
-            Pair("datasetCompanyCode.zip", RetrofitClient.instance::downloadDatasetCompany),
+//            Pair("datasetCompanyCode.zip", RetrofitClient.instance::downloadDatasetCompany),
             Pair("datasetBUnitCode.zip", RetrofitClient.instance::downloadDatasetBUnit),
             Pair("datasetDivisionCode.zip", RetrofitClient.instance::downloadDatasetDivision),
             Pair("datasetFieldCode.zip", RetrofitClient.instance::downloadDatasetField),

@@ -7,7 +7,7 @@ android {
     namespace 'com.cbi.markertph'
     compileSdk 35
 
-    def versionMajor = 1
+    def versionMajor = 2
     def versionMinor = 1
     def versionPatch = 0
 
@@ -95,4 +95,7 @@ dependencies {
     implementation 'com.squareup.retrofit2:retrofit:2.9.0'
     implementation 'com.squareup.retrofit2:converter-gson:2.9.0'
     implementation 'com.squareup.okhttp3:logging-interceptor:4.9.0' // Optional for logging
+    implementation 'com.karumi:dexter:6.2.3'
+    implementation 'androidx.core:core-ktx:1.12.0'
+    implementation 'androidx.activity:activity-ktx:1.8.2'
 }

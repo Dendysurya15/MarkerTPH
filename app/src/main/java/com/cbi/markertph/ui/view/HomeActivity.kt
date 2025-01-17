@@ -155,7 +155,6 @@ class HomeActivity : AppCompatActivity() {
     }
 
     private val requiredPermissions = arrayOf(
-        Manifest.permission.CAMERA,
         Manifest.permission.READ_EXTERNAL_STORAGE,
         Manifest.permission.WRITE_EXTERNAL_STORAGE,
         Manifest.permission.ACCESS_FINE_LOCATION, // Add fine location permission
@@ -695,6 +694,7 @@ class HomeActivity : AppCompatActivity() {
 
 
             if (isLastFile) {
+                Log.d("ParsedData", "masuk ges ? ")
                 loadTPHData(jsonObject)
             }
 
@@ -724,27 +724,37 @@ class HomeActivity : AppCompatActivity() {
 
     private fun loadTPHData(jsonObject: JSONObject) {
         try {
-            // Check if the tphList is null or needs to be loaded
-            if (tphList == null) {
+            if (jsonObject.has("TPHDB")) {
                 val gson = Gson()
+                val tphArray = jsonObject.getJSONArray("TPHDB")
+                val chunkSize = 500
+                val totalSize = tphArray.length()
+                val tempList = mutableListOf<TPHModel>()
 
-                if (jsonObject.has("TPHDB")) {
-                    // Dynamically transform and parse TPH data
-                    val tphArray = jsonObject.getJSONArray("TPHDB")
-                    val transformedTphArray = transformJsonArray(tphArray, jsonObject.getJSONObject("key"))
-                    tphList = gson.fromJson(
-                        transformedTphArray.toString(),
-                        object : TypeToken<List<TPHModel>>() {}.type
-                    )
+                Log.d("MemoryCheck", "Total TPHDB entries: $totalSize")
 
+                for (i in 0 until totalSize step chunkSize) {
+                    val end = (i + chunkSize).coerceAtMost(totalSize)
+
+                    for (j in i until end) {
+                        val item = tphArray.getJSONObject(j)
+                        val tphModel = gson.fromJson(item.toString(), TPHModel::class.java)
+                        tempList.add(tphModel)
+                    }
+
+                    Log.d("ChunkProcessing", "Processed $end out of $totalSize entries")
+                    System.gc()
                 }
-                // Log the number of entries loaded
-                Log.d("ParsedData", "Loaded TPH data with ${tphList?.size} entries")
+
+                tphList = tempList
             }
         } catch (e: Exception) {
             Log.e("TPHData", "Error loading TPH data", e)
         }
     }
+
+
+
 
     // Modified setupSpinnerView to handle selection changes properly
     private fun setupSpinnerView(layoutBinding: PertanyaanSpinnerLayoutBinding, data: List<String>) {
@@ -1496,9 +1506,22 @@ class HomeActivity : AppCompatActivity() {
     private fun checkPermissions() {
         val permissionsToRequest = mutableListOf<String>()
 
-        for (permission in requiredPermissions) {
-            if (ContextCompat.checkSelfPermission(this, permission) != PackageManager.PERMISSION_GRANTED) {
-                permissionsToRequest.add(permission)
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            // Android 13 and above
+            if (ContextCompat.checkSelfPermission(this, Manifest.permission.READ_MEDIA_IMAGES)
+                != PackageManager.PERMISSION_GRANTED) {
+                permissionsToRequest.add(Manifest.permission.READ_MEDIA_IMAGES)
+            }
+        } else {
+            // Android 12 and below
+            if (ContextCompat.checkSelfPermission(this, Manifest.permission.READ_EXTERNAL_STORAGE)
+                != PackageManager.PERMISSION_GRANTED) {
+                permissionsToRequest.add(Manifest.permission.READ_EXTERNAL_STORAGE)
+            }
+            if (Build.VERSION.SDK_INT <= Build.VERSION_CODES.Q &&
+                ContextCompat.checkSelfPermission(this, Manifest.permission.WRITE_EXTERNAL_STORAGE)
+                != PackageManager.PERMISSION_GRANTED) {
+                permissionsToRequest.add(Manifest.permission.WRITE_EXTERNAL_STORAGE)
             }
         }
 
@@ -1508,7 +1531,7 @@ class HomeActivity : AppCompatActivity() {
                 permissionsToRequest.toTypedArray(),
                 permissionRequestCode
             )
-        }else{
+        } else {
             if (shouldStartFileDownload()) {
                 Log.d("FileCheck", "Starting file download...")
                 startFileDownload()
@@ -1522,6 +1545,7 @@ class HomeActivity : AppCompatActivity() {
                     try {
                         val cachedData = dataCacheManager.getDatasets()
                         if (cachedData != null && !dataCacheManager.needsRefresh()) {
+                            Log.d("testing", "ges")
                             // Check if any of the datasets are empty
                             val hasEmptyDatasets = cachedData.companyCodeList.isEmpty() ||
                                     cachedData.bUnitCodeList.isEmpty() ||
@@ -1548,6 +1572,7 @@ class HomeActivity : AppCompatActivity() {
                                 }
                             }
                         } else {
+                            Log.d("testing", "masuk sini")
                             withContext(Dispatchers.Main) {
                                 loadingDialog.dismiss()
                                 loadAllFilesAsync()
@@ -1613,39 +1638,5 @@ class HomeActivity : AppCompatActivity() {
         }
     }
 
-    companion object {
-        @SuppressLint("HardwareIds")
-        private fun getDeviceInfo(context: Context): JSONObject {
-            val json = JSONObject()
 
-            val appVersion = context.getString(R.string.app_version)
-            json.put("app_version", appVersion)
-            json.put("os_version", Build.VERSION.RELEASE)
-            json.put("device_model", Build.MODEL)
-
-            val imeiOrAndroidId = if (ContextCompat.checkSelfPermission(
-                    context,
-                    Manifest.permission.READ_PHONE_STATE
-                ) == PackageManager.PERMISSION_GRANTED
-            ) {
-                if (Build.VERSION.SDK_INT < Build.VERSION_CODES.Q) {
-                    val telephonyManager =
-                        context.getSystemService(Context.TELEPHONY_SERVICE) as TelephonyManager
-                    telephonyManager.deviceId
-                } else {
-                    null
-                }
-            } else {
-                null
-            }
-
-            val uniqueId = imeiOrAndroidId ?: Settings.Secure.getString(
-                context.contentResolver,
-                Settings.Secure.ANDROID_ID
-            )
-            json.put("unique_id", uniqueId)
-
-            return json
-        }
-    }
 }
