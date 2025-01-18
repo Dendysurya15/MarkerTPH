@@ -24,6 +24,11 @@ class DatabaseHelper(context: Context):
         val KEY_USER_INPUT = "user_input"
         val KEY_ESTATE = "estate"
         val KEY_ESTATE_ID = "id_estate"
+
+        val KEY_REGIONAL = "regional"
+        val KEY_REGIONAL_ID = "regional_id"
+        val KEY_WILAYAH = "wilayah"
+        val KEY_WILAYAH_ID = "wilayah_id"
         val KEY_TANGGAL = "tanggal"
         val KEY_AFDELING = "afdeling"
         val KEY_AFDELING_ID = "id_afdeling"
@@ -62,7 +67,6 @@ class DatabaseHelper(context: Context):
         val KEY_IS_MATURED = "IsMatured"
 
 //        TPH
-        val KEY_REGIONAL = "Regional"
         val KEY_PLANTING_YEAR_TPH = "planting_year"
 
     }
@@ -125,6 +129,10 @@ class DatabaseHelper(context: Context):
             $KEY_ID INTEGER PRIMARY KEY AUTOINCREMENT,
             $KEY_TANGGAL VARCHAR,
             $KEY_USER_INPUT VARCHAR,
+            $KEY_REGIONAL VARCHAR,
+            $KEY_REGIONAL_ID INTEGER,
+            $KEY_WILAYAH VARCHAR,
+            $KEY_WILAYAH_ID INTEGER,
             $KEY_ESTATE VARCHAR,
             $KEY_ESTATE_ID INTEGER,
            $KEY_AFDELING VARCHAR,

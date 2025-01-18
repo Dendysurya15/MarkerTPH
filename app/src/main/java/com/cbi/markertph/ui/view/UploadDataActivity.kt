@@ -32,11 +32,15 @@ import com.cbi.markertph.data.database.DatabaseHelper.Companion.KEY_ID
 import com.cbi.markertph.data.database.DatabaseHelper.Companion.KEY_LAT
 import com.cbi.markertph.data.database.DatabaseHelper.Companion.KEY_LON
 import com.cbi.markertph.data.database.DatabaseHelper.Companion.KEY_PANEN_ULANG
+import com.cbi.markertph.data.database.DatabaseHelper.Companion.KEY_REGIONAL
+import com.cbi.markertph.data.database.DatabaseHelper.Companion.KEY_REGIONAL_ID
 import com.cbi.markertph.data.database.DatabaseHelper.Companion.KEY_TAHUN_TANAM
 import com.cbi.markertph.data.database.DatabaseHelper.Companion.KEY_TANGGAL
 import com.cbi.markertph.data.database.DatabaseHelper.Companion.KEY_TPH
 import com.cbi.markertph.data.database.DatabaseHelper.Companion.KEY_TPH_ID
 import com.cbi.markertph.data.database.DatabaseHelper.Companion.KEY_USER_INPUT
+import com.cbi.markertph.data.database.DatabaseHelper.Companion.KEY_WILAYAH
+import com.cbi.markertph.data.database.DatabaseHelper.Companion.KEY_WILAYAH_ID
 import com.cbi.markertph.data.model.UploadData
 import com.cbi.markertph.data.repository.TPHRepository
 import com.cbi.markertph.databinding.ActivityUploadDataBinding
@@ -183,6 +187,7 @@ class UploadDataActivity : AppCompatActivity() {
                     blok = it["id_blok"] as Int,
                     ancak = it["ancak"] as String,
                     nomor = it["tph"] as String,
+                    id_tph = it["id_tph"] as Int,
                     panen_ulang = it["panen_ulang"] as Int,
                     lat = it["latitude"] as String,
                     lon = it["longitude"] as String,
@@ -422,6 +427,10 @@ class UploadDataActivity : AppCompatActivity() {
                         val recordMap = mutableMapOf<String, Any>()
                         recordMap[KEY_ID] = safeRecord.id ?: 0
                         recordMap[KEY_TANGGAL] = safeRecord.tanggal ?: ""
+                        recordMap[KEY_REGIONAL] = safeRecord.estate ?: ""
+                        recordMap[KEY_REGIONAL_ID] = safeRecord.wilayah_id ?: ""
+                        recordMap[KEY_WILAYAH] = safeRecord.wilayah ?: ""
+                        recordMap[KEY_WILAYAH_ID] = safeRecord.wilayah_id ?: ""
                         recordMap[KEY_ESTATE] = safeRecord.estate ?: ""
                         recordMap[KEY_USER_INPUT] = safeRecord.user_input ?: ""
                         recordMap[KEY_ESTATE_ID] = safeRecord.id_estate ?: 0
@@ -431,7 +440,6 @@ class UploadDataActivity : AppCompatActivity() {
                         recordMap[KEY_BLOK] = safeRecord.blok ?: ""
                         recordMap[KEY_BLOK_ID] = safeRecord.id_blok ?: 0
                         recordMap[KEY_ANCAK] = safeRecord.ancak ?: ""
-                        recordMap[KEY_ANCAK_ID] = safeRecord.id_ancak ?: 0
                         recordMap[KEY_TPH] = safeRecord.tph ?: ""
                         recordMap[KEY_TPH_ID] = safeRecord.id_tph ?: 0
                         recordMap[KEY_PANEN_ULANG] = safeRecord.panen_ulang ?: 0

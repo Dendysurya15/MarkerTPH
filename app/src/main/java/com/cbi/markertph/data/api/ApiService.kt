@@ -25,24 +25,32 @@ interface ApiService {
     @GET("fetchRawDataTPH")
     fun fetchRawData(): retrofit2.Call<FetchResponseTPH>
 
+//    @Streaming
+//    @GET("downloadDatasetCompanyJson")
+//    suspend fun downloadDatasetCompany(): Response<ResponseBody>
+//
     @Streaming
-    @GET("downloadDatasetCompanyJson")
-    suspend fun downloadDatasetCompany(): Response<ResponseBody>
+    @GET("downloadDatasetTPHNewJson")
+    suspend fun downloadDatasetTPHNewJson(): Response<ResponseBody>
 
     @Streaming
-    @GET("downloadDatasetBUnitJson")
-    suspend fun downloadDatasetBUnit(): Response<ResponseBody>
+    @GET("downloadDatasetBlokJson")
+    suspend fun downloadDatasetBlokJson(): Response<ResponseBody>
 
     @Streaming
-    @GET("downloadDatasetDivisionJson")
-    suspend fun downloadDatasetDivision(): Response<ResponseBody>
+    @GET("downloadDatasetDivisiJson")
+    suspend fun downloadDatasetDivisiJson(): Response<ResponseBody>
 
     @Streaming
-    @GET("downloadDatasetTPHJson")
-    suspend fun downloadDatasetTPH(): Response<ResponseBody>
+    @GET("downloadDatasetDeptJson")
+    suspend fun downloadDatasetDeptJson(): Response<ResponseBody>
 
     @Streaming
-    @GET("downloadDatasetFieldJson")
-    suspend fun downloadDatasetField(): Response<ResponseBody>
+    @GET("downloadDatasetWilayahJson")
+    suspend fun downloadDatasetWilayahJson(): Response<ResponseBody>
+
+    @Streaming
+    @GET("downloadDatasetRegionalJson")
+    suspend fun downloadDatasetRegionalJson(): Response<ResponseBody>
 
 }

@@ -9,6 +9,7 @@ import android.util.Base64
 import android.util.Log
 import android.widget.Toast
 import androidx.core.content.ContentProviderCompat.requireContext
+import androidx.core.database.getIntOrNull
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import com.cbi.markertph.R
@@ -28,11 +29,15 @@ import com.cbi.markertph.data.database.DatabaseHelper.Companion.KEY_ESTATE_ID
 import com.cbi.markertph.data.database.DatabaseHelper.Companion.KEY_ID
 import com.cbi.markertph.data.database.DatabaseHelper.Companion.KEY_LAT
 import com.cbi.markertph.data.database.DatabaseHelper.Companion.KEY_LON
+import com.cbi.markertph.data.database.DatabaseHelper.Companion.KEY_REGIONAL
+import com.cbi.markertph.data.database.DatabaseHelper.Companion.KEY_REGIONAL_ID
 import com.cbi.markertph.data.database.DatabaseHelper.Companion.KEY_TAHUN_TANAM
 import com.cbi.markertph.data.database.DatabaseHelper.Companion.KEY_TANGGAL
 import com.cbi.markertph.data.database.DatabaseHelper.Companion.KEY_TPH
 import com.cbi.markertph.data.database.DatabaseHelper.Companion.KEY_TPH_ID
 import com.cbi.markertph.data.database.DatabaseHelper.Companion.KEY_USER_INPUT
+import com.cbi.markertph.data.database.DatabaseHelper.Companion.KEY_WILAYAH
+import com.cbi.markertph.data.database.DatabaseHelper.Companion.KEY_WILAYAH_ID
 import com.cbi.markertph.data.model.BUnitCodeModel
 import com.cbi.markertph.data.model.BatchUploadRequest
 import com.cbi.markertph.data.model.CompanyCodeModel
@@ -427,6 +432,10 @@ class TPHRepository(context: Context) {
         val values = ContentValues().apply {
             put(DatabaseHelper.KEY_TANGGAL, data.tanggal)
             put(DatabaseHelper.KEY_USER_INPUT, data.user_input)
+            put(DatabaseHelper.KEY_REGIONAL, data.regional)
+            put(DatabaseHelper.KEY_REGIONAL_ID, data.regional_id)
+            put(DatabaseHelper.KEY_WILAYAH, data.wilayah)
+            put(DatabaseHelper.KEY_WILAYAH_ID, data.wilayah_id)
             put(DatabaseHelper.KEY_ESTATE, data.estate)
             put(DatabaseHelper.KEY_ESTATE_ID, data.id_estate)
             put(DatabaseHelper.KEY_AFDELING, data.afdeling)
@@ -435,7 +444,6 @@ class TPHRepository(context: Context) {
             put(DatabaseHelper.KEY_BLOK, data.blok)
             put(DatabaseHelper.KEY_BLOK_ID, data.id_blok)
             put(DatabaseHelper.KEY_ANCAK, data.ancak)
-            put(DatabaseHelper.KEY_ANCAK_ID, data.id_ancak)
             put(DatabaseHelper.KEY_TPH, data.tph)
             put(DatabaseHelper.KEY_TPH_ID, data.id_tph)
             put(DatabaseHelper.KEY_PANEN_ULANG, data.panen_ulang)
@@ -462,6 +470,10 @@ class TPHRepository(context: Context) {
                     id = it.getInt(it.getColumnIndexOrThrow(KEY_ID)),
                     tanggal = it.getString(it.getColumnIndexOrThrow(KEY_TANGGAL)) ?: "",
                     estate = it.getString(it.getColumnIndexOrThrow(KEY_ESTATE)) ?: "",
+                    regional = it.getString(it.getColumnIndexOrThrow(KEY_REGIONAL)) ?: "",
+                    regional_id = it.getIntOrNull(it.getColumnIndexOrThrow(KEY_REGIONAL_ID)) ?: 0,
+                    wilayah = it.getString(it.getColumnIndexOrThrow(KEY_WILAYAH)) ?: "",
+                    wilayah_id = it.getIntOrNull(it.getColumnIndexOrThrow(KEY_WILAYAH_ID)) ?: 0,
                     user_input = it.getString(it.getColumnIndexOrThrow(KEY_USER_INPUT)) ?: "",
                     id_estate = it.getInt(it.getColumnIndexOrThrow(KEY_ESTATE_ID)),
                     afdeling = it.getString(it.getColumnIndexOrThrow(KEY_AFDELING)) ?: "",
@@ -469,7 +481,6 @@ class TPHRepository(context: Context) {
                     blok = it.getString(it.getColumnIndexOrThrow(KEY_BLOK)) ?: "",
                     id_blok = it.getInt(it.getColumnIndexOrThrow(KEY_BLOK_ID)),
                     ancak = it.getString(it.getColumnIndexOrThrow(KEY_ANCAK)) ?: "",
-                    id_ancak = it.getInt(it.getColumnIndexOrThrow(KEY_ANCAK_ID)),
                     tahun_tanam =  it.getString(it.getColumnIndexOrThrow(KEY_TAHUN_TANAM)),
                     tph = it.getString(it.getColumnIndexOrThrow(KEY_TPH)) ?: "",
                     id_tph = it.getInt(it.getColumnIndexOrThrow(KEY_TPH_ID)),
@@ -606,19 +617,34 @@ class TPHRepository(context: Context) {
                                         val storedData = responseData?.get("stored") as? List<*>
                                         val duplicateCount = dataList.size - (storedData?.size ?: 0)
 
+                                        Log.d("testing", storedData.toString())
                                         var successfulUpdates = 0
                                         dataList.forEach { data ->
                                             val wasStored = storedData?.any { stored ->
                                                 (stored as? Map<*, *>)?.let { map ->
+                                                    val deptComparison = map["dept"].toString() == data.dept.toString()
+                                                    val divisiComparison = map["divisi"].toString() == data.divisi.toString()
+                                                    val tahunComparison = map["tahun"].toString() == data.tahun.toString()
+                                                    val blokComparison = map["blok"].toString() == data.blok.toString()
+                                                    val nomorComparison = map["nomor"].toString() == data.nomor.toString()
+                                                    val id_tph = map["id_tph"].toString() == data.id_tph.toString()
 
-                                                    map["BUnitCode"].toString() == data.id_estate.toString() &&
-                                                    map["DivisionCode"].toString() == data.id_afdeling.toString() &&
-                                                    map["planting_year"].toString() == data.tahun_tanam.toString() &&
-                                                    map["FieldCode"].toString() == data.id_blok.toString() &&
-                                                    map["ancak"].toString() == data.ancak.toString() &&
-                                                    map["tph"].toString() == data.tph.toString()
+                                                    // Log detailed comparisons
+                                                    Log.d("testing", "Comparing dept: ${map["dept"]} with ${data.dept} -> $deptComparison")
+                                                    Log.d("testing", "Comparing divisi: ${map["divisi"]} with ${data.divisi} -> $divisiComparison")
+                                                    Log.d("testing", "Comparing tahun: ${map["tahun"]} with ${data.tahun} -> $tahunComparison")
+                                                    Log.d("testing", "Comparing blok: ${map["blok"]} with ${data.blok} -> $blokComparison")
+                                                    Log.d("testing", "Comparing nomor: ${map["nomor"]} with ${data.nomor} -> $nomorComparison")
+                                                    Log.d("testing", "Id_TPH: ${map["id_tph"]} with ${data.id_tph} -> $nomorComparison")
+
+                                                    // Log the full map and data being compared
+                                                    Log.d("DetailedMap", "Map: $map")
+                                                    Log.d("DetailedData", "Data: $data")
+
+                                                    deptComparison && divisiComparison && tahunComparison && blokComparison && nomorComparison
                                                 } ?: false
                                             } ?: false
+
                                             Log.d("testing", "Final comparison result: $wasStored")
                                             Log.d("testing", "For ID: ${data.id}")
                                             if (wasStored) {

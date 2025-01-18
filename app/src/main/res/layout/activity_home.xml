@@ -145,6 +145,16 @@
 
                     <include
                         layout="@layout/pertanyaan_spinner_layout"
+                        android:id="@+id/layoutRegional"/>
+
+                    <include
+                        layout="@layout/pertanyaan_spinner_layout"
+                        android:visibility="gone"
+                        android:id="@+id/layoutWilayah"/>
+
+                    <include
+                        layout="@layout/pertanyaan_spinner_layout"
+                        android:visibility="gone"
                         android:id="@+id/layoutEstate"/>
 
                     <include
@@ -161,6 +171,16 @@
                         layout="@layout/pertanyaan_spinner_layout"
                         android:visibility="gone"
                         android:id="@+id/layoutBlok"/>
+
+                    <com.airbnb.lottie.LottieAnimationView
+                        android:id="@+id/lottieLoading"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_gravity="center"
+                        android:visibility="gone"
+                        app:lottie_loop="true"
+                        app:lottie_autoPlay="true" />
+
 
                     <include
                         layout="@layout/pertanyaan_spinner_layout"
@@ -207,7 +227,7 @@
         app:layout_constraintEnd_toEndOf="parent"
         android:layout_marginBottom="100dp"
         android:layout_marginRight="30dp"
-        app:backgroundTint="@color/greenDefault"
+        app:backgroundTint="@color/yellowbutton"
         app:tint="@color/white"
         app:maxImageSize="30dp"
         app:rippleColor="@color/greendarkerbutton"

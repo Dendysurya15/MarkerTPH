@@ -14,6 +14,7 @@ data class UploadData(
     @SerializedName("blok") val blok: Int,
     @SerializedName("ancak") val ancak: String?,
     @SerializedName("nomor") val nomor: String?,
+    @SerializedName("id_tph") val id_tph: Int?,
     @SerializedName("panen_ulang") val panen_ulang: Int,
     @SerializedName("lat") val lat: String,
     @SerializedName("lon") val lon: String,

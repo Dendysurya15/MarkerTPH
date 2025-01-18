@@ -53,6 +53,29 @@ class PrefManager(_context: Context) {
             editor.commit()
         }
 
+    var ancak_input: String?
+        get() = pref.getString("ancak_input", "")
+        set(hexDataWl) {
+            editor.putString("ancak_input", hexDataWl)
+            editor.commit()
+        }
+
+
+    var id_selected_regional: Int?
+        get() = pref.getInt("id_selected_regional", 0)
+        set(hexDataWl) {
+            editor.putInt("id_selected_regional", hexDataWl!!)
+            editor.commit()
+        }
+
+    var id_selected_wilayah: Int?
+        get() = pref.getInt("id_selected_wilayah", 0)
+        set(hexDataWl) {
+            editor.putInt("id_selected_wilayah", hexDataWl!!)
+            editor.commit()
+        }
+
+
     var id_selected_estate: Int?
         get() = pref.getInt("id_selected_estate", 0)
         set(hexDataWl) {

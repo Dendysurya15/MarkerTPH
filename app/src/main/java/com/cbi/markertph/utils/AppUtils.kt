@@ -63,10 +63,16 @@ object AppUtils {
     object ApiCallManager {
         val apiCallList = listOf(
 //            Pair("datasetCompanyCode.zip", RetrofitClient.instance::downloadDatasetCompany),
-            Pair("datasetBUnitCode.zip", RetrofitClient.instance::downloadDatasetBUnit),
-            Pair("datasetDivisionCode.zip", RetrofitClient.instance::downloadDatasetDivision),
-            Pair("datasetFieldCode.zip", RetrofitClient.instance::downloadDatasetField),
-            Pair("datasetTPHCode.zip", RetrofitClient.instance::downloadDatasetTPH),
+//            Pair("datasetBUnitCode.zip", RetrofitClient.instance::downloadDatasetBUnit),
+//            Pair("datasetDivisionCode.zip", RetrofitClient.instance::downloadDatasetDivision),
+//            Pair("datasetFieldCode.zip", RetrofitClient.instance::downloadDatasetField),
+//            Pair("datasetTPHCode.zip", RetrofitClient.instance::downloadDatasetTPH),
+            Pair("datasetRegional.zip", RetrofitClient.instance::downloadDatasetRegionalJson),
+            Pair("datasetWilayah.zip", RetrofitClient.instance::downloadDatasetWilayahJson),
+            Pair("datasetDept.zip", RetrofitClient.instance::downloadDatasetDeptJson),
+            Pair("datasetDivisi.zip", RetrofitClient.instance::downloadDatasetDivisiJson),
+            Pair("datasetBlok.zip", RetrofitClient.instance::downloadDatasetBlokJson),
+            Pair("datasetTPH.zip", RetrofitClient.instance::downloadDatasetTPHNewJson),
         )
     }
     /**

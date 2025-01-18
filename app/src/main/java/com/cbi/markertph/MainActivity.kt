@@ -99,107 +99,107 @@ class MainActivity : ComponentActivity() {
         }
     }
 
-    private fun showMainContent() {
-        if (!showingSplash) return
-        showingSplash = false
-
-        loadingDialog = LoadingDialog(this)
-        loadingDialog.show()
-
-        // Create a job for progress updates
-        val progressJob = lifecycleScope.launch(Dispatchers.Main) {
-            var dots = 1
-            while (true) {
-                loadingDialog.setMessage("${stringXML(R.string.fetching_data)}${".".repeat(dots)}")
-                dots = if (dots >= 3) 1 else dots + 1
-                delay(500) // Update every 500ms
-            }
-        }
-
-        lifecycleScope.launch {
-            try {
-                // Fetch data
-                val response = withContext(Dispatchers.IO) {
-                    RetrofitClient.instance.fetchRawData().execute()
-                }
-
-                if (response.isSuccessful) {
-                    val fetchResponse = response.body()
-                    if (fetchResponse?.statusCode == 1) {
-                        val allData = fetchResponse.data
-
-                        // Process all data in background
-                        withContext(Dispatchers.Default) {
-                            // Process in sequence but in background
-                            allData?.companyCode?.forEach { companyCodeModel ->
-                                tphViewModel.insertCompanyCode(companyCodeModel)
-                            }
-
-                            allData?.bUnitCode?.forEach { bUnitCodeModel ->
-                                tphViewModel.insertBUnitCode(bUnitCodeModel)
-                            }
-
-                            allData?.divisionCode?.forEach { divisionCodeModel ->
-                                tphViewModel.insertDivisionCode(divisionCodeModel)
-                            }
-
-                            allData?.fieldCode?.forEach { fieldCodeModel ->
-                                tphViewModel.insertFieldCode(fieldCodeModel)
-                            }
-
-                            allData?.tph?.let { tphList ->
-                                Log.d("MainActivity", "Processing ${tphList.size} TPH records")
-                                tphViewModel.insertTPHBatch(tphList)
-                            }
-                        }
-
-                        // Cancel progress updates
-                        progressJob.cancel()
-
-                        // Navigate after all processing is done
-                        withContext(Dispatchers.Main) {
-                            loadingDialog.dismiss()
-                            startActivity(Intent(this@MainActivity, HomeActivity::class.java))
-                            finish()
-                        }
-                    } else {
-                        progressJob.cancel()
-                        withContext(Dispatchers.Main) {
-                            loadingDialog.dismiss()
-                            Toast.makeText(
-                                this@MainActivity,
-                                fetchResponse?.message ?: "Failed to fetch data",
-                                Toast.LENGTH_SHORT
-                            ).show()
-                        }
-                    }
-                } else {
-                    progressJob.cancel()
-                    withContext(Dispatchers.Main) {
-                        loadingDialog.dismiss()
-                        Toast.makeText(
-                            this@MainActivity,
-                            "Error: ${response.code()}",
-                            Toast.LENGTH_SHORT
-                        ).show()
-                    }
-                }
-            } catch (e: Exception) {
-
-                logErrorToFile("Exception Details:\n" +
-                        "Message: ${e.message}\n" +
-                        "Stack Trace:\n${e.stackTraceToString()}")
-                progressJob.cancel()
-
-                withContext(Dispatchers.Main) {
-                    loadingDialog.dismiss()
-                    Toast.makeText(
-                        this@MainActivity,
-                        "Exception: ${e.message}",
-                        Toast.LENGTH_SHORT
-                    ).show()
-                }
-            }
-        }
-    }
+//    private fun showMainContent() {
+//        if (!showingSplash) return
+//        showingSplash = false
+//
+//        loadingDialog = LoadingDialog(this)
+//        loadingDialog.show()
+//
+//        // Create a job for progress updates
+//        val progressJob = lifecycleScope.launch(Dispatchers.Main) {
+//            var dots = 1
+//            while (true) {
+//                loadingDialog.setMessage("${stringXML(R.string.fetching_data)}${".".repeat(dots)}")
+//                dots = if (dots >= 3) 1 else dots + 1
+//                delay(500) // Update every 500ms
+//            }
+//        }
+//
+//        lifecycleScope.launch {
+//            try {
+//                // Fetch data
+//                val response = withContext(Dispatchers.IO) {
+//                    RetrofitClient.instance.fetchRawData().execute()
+//                }
+//
+//                if (response.isSuccessful) {
+//                    val fetchResponse = response.body()
+//                    if (fetchResponse?.statusCode == 1) {
+//                        val allData = fetchResponse.data
+//
+//                        // Process all data in background
+//                        withContext(Dispatchers.Default) {
+//                            // Process in sequence but in background
+//                            allData?.companyCode?.forEach { companyCodeModel ->
+//                                tphViewModel.insertCompanyCode(companyCodeModel)
+//                            }
+//
+//                            allData?.bUnitCode?.forEach { bUnitCodeModel ->
+//                                tphViewModel.insertBUnitCode(bUnitCodeModel)
+//                            }
+//
+//                            allData?.divisionCode?.forEach { divisionCodeModel ->
+//                                tphViewModel.insertDivisionCode(divisionCodeModel)
+//                            }
+//
+//                            allData?.fieldCode?.forEach { fieldCodeModel ->
+//                                tphViewModel.insertFieldCode(fieldCodeModel)
+//                            }
+//
+//                            allData?.tph?.let { tphList ->
+//                                Log.d("MainActivity", "Processing ${tphList.size} TPH records")
+//                                tphViewModel.insertTPHBatch(tphList)
+//                            }
+//                        }
+//
+//                        // Cancel progress updates
+//                        progressJob.cancel()
+//
+//                        // Navigate after all processing is done
+//                        withContext(Dispatchers.Main) {
+//                            loadingDialog.dismiss()
+//                            startActivity(Intent(this@MainActivity, HomeActivity::class.java))
+//                            finish()
+//                        }
+//                    } else {
+//                        progressJob.cancel()
+//                        withContext(Dispatchers.Main) {
+//                            loadingDialog.dismiss()
+//                            Toast.makeText(
+//                                this@MainActivity,
+//                                fetchResponse?.message ?: "Failed to fetch data",
+//                                Toast.LENGTH_SHORT
+//                            ).show()
+//                        }
+//                    }
+//                } else {
+//                    progressJob.cancel()
+//                    withContext(Dispatchers.Main) {
+//                        loadingDialog.dismiss()
+//                        Toast.makeText(
+//                            this@MainActivity,
+//                            "Error: ${response.code()}",
+//                            Toast.LENGTH_SHORT
+//                        ).show()
+//                    }
+//                }
+//            } catch (e: Exception) {
+//
+//                logErrorToFile("Exception Details:\n" +
+//                        "Message: ${e.message}\n" +
+//                        "Stack Trace:\n${e.stackTraceToString()}")
+//                progressJob.cancel()
+//
+//                withContext(Dispatchers.Main) {
+//                    loadingDialog.dismiss()
+//                    Toast.makeText(
+//                        this@MainActivity,
+//                        "Exception: ${e.message}",
+//                        Toast.LENGTH_SHORT
+//                    ).show()
+//                }
+//            }
+//        }
+//    }
 }
