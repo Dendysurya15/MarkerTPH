@@ -112,8 +112,11 @@
         android:id="@+id/scPanen"
         android:layout_width="match_parent"
         android:layout_height="0dp"
+        android:fillViewport="true"
+        app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintTop_toBottomOf="@id/navbar"
-        tools:ignore="MissingConstraints">
+        android:paddingBottom="100dp"
+        android:clipToPadding="false">
 
 
         <RelativeLayout
@@ -192,6 +195,121 @@
                         android:visibility="gone"
                         android:id="@+id/layoutTPH"/>
 
+                    <com.google.android.material.card.MaterialCardView xmlns:android="http://schemas.android.com/apk/res/android"
+                        xmlns:tools="http://schemas.android.com/tools"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        xmlns:app="http://schemas.android.com/apk/res-auto"
+                        android:layout_marginTop="10dp"
+                        app:cardCornerRadius="16dp"
+                        android:visibility="gone"
+                        android:id="@+id/cardKoordinatTerdaftar"
+                        android:layout_gravity="right"
+                        app:cardBackgroundColor="@color/bgSelectWorkerGreen"
+                        app:strokeWidth="1dp"
+                        app:strokeColor="@color/strokeSelectWorkerGreen">
+
+                        <LinearLayout
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:orientation="vertical"
+                            android:paddingHorizontal="12dp"
+                            android:paddingVertical="8dp">
+
+                            <TextView
+                                android:id="@+id/worker_name"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:layout_marginEnd="8dp"
+                                android:text="Koordinat Sudah terdaftar !"
+                                android:fontFamily="@font/inter_bold"
+                                android:layout_gravity="center_vertical"
+                                android:textSize="16dp" />
+
+                            <TextView
+                                android:id="@+id/detect_user_input"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:layout_marginEnd="8dp"
+
+                                android:fontFamily="@font/inter_regular"
+                                android:layout_gravity="center_vertical"
+                                android:textSize="16dp" />
+
+                            <TextView
+                                android:id="@+id/detect_tanggal_input"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:layout_marginEnd="8dp"
+                                android:fontFamily="@font/inter_regular"
+                                android:layout_gravity="center_vertical"
+                                android:textSize="16dp" />
+
+                            <TextView
+                                android:id="@+id/detect_lat_input"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:layout_marginEnd="8dp"
+                                android:fontFamily="@font/inter_regular"
+                                android:layout_gravity="center_vertical"
+                                android:textSize="16dp" />
+
+                            <TextView
+                                android:id="@+id/detect_lon_input"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:layout_marginEnd="8dp"
+                                android:fontFamily="@font/inter_regular"
+                                android:layout_gravity="center_vertical"
+                                android:textSize="16dp" />
+
+                        </LinearLayout>
+                    </com.google.android.material.card.MaterialCardView>
+
+                    <com.google.android.material.card.MaterialCardView xmlns:android="http://schemas.android.com/apk/res/android"
+                        xmlns:tools="http://schemas.android.com/tools"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        xmlns:app="http://schemas.android.com/apk/res-auto"
+                        android:layout_marginTop="10dp"
+                        app:cardCornerRadius="16dp"
+                        android:visibility="gone"
+                        android:id="@+id/cardKoordinatKurangTepat"
+                        android:layout_gravity="right"
+                        app:cardBackgroundColor="@color/yellowLightBackground"
+                        app:strokeWidth="1dp"
+                        app:strokeColor="@color/strokeyellowLightBackground">
+
+                        <LinearLayout
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:orientation="vertical"
+                            android:paddingHorizontal="12dp"
+                            android:paddingVertical="8dp">
+
+                            <TextView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:layout_marginEnd="8dp"
+                                android:textColor="@color/brown"
+                                android:text="Koordinat Terdeteksi Salah!"
+                                android:fontFamily="@font/inter_bold"
+                                android:layout_gravity="center_vertical"
+                                android:textSize="15dp" />
+
+                            <TextView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:layout_marginEnd="8dp"
+                                android:textColor="@color/brown"
+                                android:text="Mohon update koordinat TPH ini"
+                                android:fontFamily="@font/inter_regular"
+                                android:layout_gravity="center_vertical"
+                                android:textSize="15dp" />
+
+                        </LinearLayout>
+                    </com.google.android.material.card.MaterialCardView>
+
                     <com.google.android.material.button.MaterialButton
                         android:id="@+id/mbSaveDataTPH"
                         android:layout_width="wrap_content"
@@ -227,10 +345,10 @@
         app:layout_constraintEnd_toEndOf="parent"
         android:layout_marginBottom="100dp"
         android:layout_marginRight="30dp"
-        app:backgroundTint="@color/yellowbutton"
+        app:backgroundTint="@color/bluedarklight"
         app:tint="@color/white"
         app:maxImageSize="30dp"
-        app:rippleColor="@color/greendarkerbutton"
+        app:rippleColor="@color/bluedark"
         android:tooltipText="Menu Upload"
     tools:ignore="MissingConstraints" />
 

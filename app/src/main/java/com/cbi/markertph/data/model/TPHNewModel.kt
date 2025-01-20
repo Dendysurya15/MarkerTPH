@@ -15,6 +15,9 @@ data class TPHNewModel (
     val kode_tph:String,
     val nomor:String,
     val tahun:String,
+    val lat:String,
+    val lon:String,
     val status:String,
     val user_input:String,
+    val update_date:String,
 )

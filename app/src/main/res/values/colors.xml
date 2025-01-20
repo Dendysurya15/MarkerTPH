@@ -20,6 +20,14 @@
     <color name="yellowdarker">#8FC33C</color>
     <color name="blueLight">#f7fbff</color>
     <color name="graylightDarker">#d3d3d3</color>
+    <color name="bgSelectWorkerGreen">#daedd5</color>
+    <color name="strokeSelectWorkerGreen">#a7c79f</color>
+    <color name="yellowLightBackground">#f6f3d8</color>
+    <color name="strokeyellowLightBackground">#e3e2c6</color>
+    <color name="brown">#7e6c40</color>
+
+
+
 
 
 

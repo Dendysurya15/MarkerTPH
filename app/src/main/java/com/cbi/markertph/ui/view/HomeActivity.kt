@@ -68,6 +68,7 @@ import com.google.android.gms.location.LocationCallback
 import com.google.android.gms.location.LocationRequest
 import com.google.android.gms.location.LocationServices
 import com.google.android.material.button.MaterialButton
+import com.google.android.material.card.MaterialCardView
 import com.google.android.material.snackbar.Snackbar
 import com.google.gson.Gson
 import com.google.gson.reflect.TypeToken
@@ -86,7 +87,7 @@ import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
 import java.util.zip.GZIPInputStream
-
+import android.text.InputType as AndroidInputType
 
 class HomeActivity : AppCompatActivity() {
     private lateinit var binding: ActivityHomeBinding
@@ -390,13 +391,13 @@ class HomeActivity : AppCompatActivity() {
             }
         }
 
-        val savedRegionalIndexSpinner = prefManager?.id_selected_regional ?: 0
-        val savedWilayahIndexSpinner = prefManager?.id_selected_wilayah ?: 0
-        val savedEstateIndexSpinner = prefManager?.id_selected_estate ?: 0
-        val savedAfdelingIndexSpinner = prefManager?.id_selected_afdeling ?: 0
-        val savedTahunTanamIndexSpinner = prefManager?.id_selected_tahun_tanam ?: 0
-        val savedBlockIndexSpinner = prefManager?.id_selected_blok ?: 0
-        val savedTPHIndexSpinner = prefManager?.id_selected_tph ?: 0
+//        val savedRegionalIndexSpinner = prefManager?.id_selected_regional ?: 0
+//        val savedWilayahIndexSpinner = prefManager?.id_selected_wilayah ?: 0
+//        val savedEstateIndexSpinner = prefManager?.id_selected_estate ?: 0
+//        val savedAfdelingIndexSpinner = prefManager?.id_selected_afdeling ?: 0
+//        val savedTahunTanamIndexSpinner = prefManager?.id_selected_tahun_tanam ?: 0
+//        val savedBlockIndexSpinner = prefManager?.id_selected_blok ?: 0
+//        val savedTPHIndexSpinner = prefManager?.id_selected_tph ?: 0
 
 
         lifecycleScope.launch {
@@ -707,7 +708,7 @@ class HomeActivity : AppCompatActivity() {
             if (jsonObject.has("TPHDB")) {
                 val tphArray = jsonObject.getJSONArray("TPHDB")
                 val keyObject = jsonObject.getJSONObject("key")
-                val chunkSize = 100 // Adjust the chunk size as needed
+                val chunkSize = 50 // Adjust the chunk size as needed
 
                 // Create a mutable list to accumulate all TPHNewModel objects
                 val accumulatedTPHList = mutableListOf<TPHNewModel>()
@@ -728,7 +729,6 @@ class HomeActivity : AppCompatActivity() {
                         object : TypeToken<List<TPHNewModel>>() {}.type
                     )
 
-                    // Add the parsed models from the chunk to the accumulated list
                     accumulatedTPHList.addAll(chunkList)
 
                     Log.d("LoadTPHData", "Processed chunk: $i to ${(i + chunkSize - 1).coerceAtMost(tphArray.length() - 1)}")
@@ -909,15 +909,50 @@ class HomeActivity : AppCompatActivity() {
                         selectedTPH = item.toString()
                         selectedTPHSpinnerIndex = position
 
+                        val materialCardView = findViewById<MaterialCardView>(R.id.cardKoordinatTerdaftar)
+                        val materialCardViewTPHKoorSalah = findViewById<MaterialCardView>(R.id.cardKoordinatKurangTepat)
+                        val detectUserInput = findViewById<TextView>(R.id.detect_user_input)
+                        val detectTanggalInput = findViewById<TextView>(R.id.detect_tanggal_input)
+                        val detectLatInput = findViewById<TextView>(R.id.detect_lat_input)
+                        val detectLonInput = findViewById<TextView>(R.id.detect_lon_input)
+
                         val selectedTPHId = tphList!!.find {
-                                    it.regional == selectedRegionalValue &&
+                            it.regional == selectedRegionalValue &&
                                     it.dept == selectedEstateValue &&
-                                    it.divisi == selectedDivisiValue
+                                    it.divisi == selectedDivisiValue &&
                                     it.blok == selectedBlokValue &&
                                     it.tahun == selectedTahunTanamValue &&
                                     it.nomor == selectedTPH
-                        }?.id
-                        selectedTPHValue = selectedTPHId
+                        }
+
+                        selectedTPHValue = selectedTPHId?.id
+                        val selectedTPHLat = selectedTPHId?.lat
+                        val selectedTPHLon = selectedTPHId?.lon
+                        val selectedTPHUserInput = selectedTPHId?.user_input
+                        val selectedTPHUpdateDate = selectedTPHId?.update_date
+                        val selectedTPHStatus = selectedTPHId?.status
+
+
+                        val latPattern = "^-?([0-8]?[0-9]|90)\\.\\d+$".toRegex()
+                        val lonPattern = "^-?((1[0-7][0-9])|([0-9]?[0-9]))\\.\\d+$".toRegex()
+
+                        if (selectedTPHLat?.matches(latPattern) == true &&
+                            selectedTPHLon?.matches(lonPattern) == true) {
+                            detectLatInput.text = selectedTPHLat
+                            detectLonInput.text = selectedTPHLon
+                            detectUserInput.text = selectedTPHUserInput
+                            detectTanggalInput.text = selectedTPHUpdateDate
+                            materialCardView.visibility = View.VISIBLE
+                        } else {
+                            materialCardView.visibility = View.GONE
+                        }
+
+                        if (selectedTPHStatus == "2") {
+                            materialCardViewTPHKoorSalah.visibility = View.VISIBLE
+                        }else{
+                            materialCardViewTPHKoorSalah.visibility = View.GONE
+                        }
+
                     }
                 }
             }
@@ -928,7 +963,10 @@ class HomeActivity : AppCompatActivity() {
     fun resetViewsBelow(triggeredLayout: PertanyaanSpinnerLayoutBinding) {
         val mbSave = findViewById<MaterialButton>(R.id.mbSaveDataTPH)
         mbSave.visibility = View.GONE
-
+        val materialCardView = findViewById<MaterialCardView>(R.id.cardKoordinatTerdaftar)
+        materialCardView.visibility = View.GONE
+        val materialCardViewTPHKoorSalah = findViewById<MaterialCardView>(R.id.cardKoordinatKurangTepat)
+        materialCardViewTPHKoorSalah.visibility = View.GONE
         findViewById<LinearLayout>(R.id.layoutAncak).visibility = View.GONE
         when (triggeredLayout) {
             binding.layoutRegional -> {
@@ -1004,19 +1042,27 @@ class HomeActivity : AppCompatActivity() {
         with(layoutBinding) {
             spHomeMarkerTPH.visibility = View.GONE
             etHomeMarkerTPH.visibility = View.VISIBLE
-
+            // Set input type based on layout
+            when (layoutBinding) {
+                binding.layoutAncak -> {
+                    etHomeMarkerTPH.inputType = AndroidInputType.TYPE_CLASS_NUMBER
+                }
+                else -> {
+                    etHomeMarkerTPH.inputType = AndroidInputType.TYPE_CLASS_TEXT
+                }
+            }
 
             if (layoutBinding == binding.layoutUserInput) {
                 val savedUserInput = prefManager?.user_input ?: ""
                 if (savedUserInput.isNotEmpty()) {
                     etHomeMarkerTPH.setText(savedUserInput)
-                    userInput = savedUserInput  // Update the userInput variable as well
+                    userInput = savedUserInput
                 }
 
                 val savedAncakInput = prefManager?.ancak_input ?: ""
                 if (savedAncakInput.isNotEmpty()) {
                     etHomeMarkerTPH.setText(savedAncakInput)
-                    ancakInput = savedAncakInput  // Update the userInput variable as well
+                    ancakInput = savedAncakInput
                 }
             }
 
@@ -1545,17 +1591,19 @@ class HomeActivity : AppCompatActivity() {
 
                     try {
                         val cachedData = dataCacheManager.getDatasets()
-                        if (cachedData != null && !dataCacheManager.needsRefresh()) {
+
+
+                        if (cachedData != null) {
                             // Check if any of the datasets are empty
+
+
+
                             val hasEmptyDatasets =
-                                cachedData.regionalList.isEmpty() ||
-                                        cachedData.wilayahList.isEmpty() ||
+                                cachedData.regionalList.isEmpty() || cachedData.wilayahList.isEmpty() ||
                                     cachedData.deptList.isEmpty() ||
                                     cachedData.divisiList.isEmpty() ||
                                     cachedData.blokList.isEmpty() ||
                                     cachedData.tphList.isEmpty()
-
-
 
                             if (hasEmptyDatasets) {
                                 withContext(Dispatchers.Main) {
