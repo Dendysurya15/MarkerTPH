@@ -27,6 +27,26 @@ class PrefManager(_context: Context) {
         }
     }
 
+    fun setDateModified(key: String, value: String?) {
+        editor.putString(key, value)
+        editor.commit()
+    }
+
+    fun getAllDateModified(): Map<String, String?> {
+        val allEntries = pref.all
+        val dateModifiedMap = mutableMapOf<String, String?>()
+
+        for ((key, value) in allEntries) {
+            // Check if the key matches your convention for date_modified keys
+            if (key.endsWith("DB") && value is String) {
+                dateModifiedMap[key] = value
+            }
+        }
+
+        return dateModifiedMap
+    }
+
+
     // Clear the file list
     fun clearFileList() {
         editor.remove("downloaded_file_list").apply()
@@ -37,6 +57,48 @@ class PrefManager(_context: Context) {
         set(isFirstTime) {
             editor.putBoolean("IsFirstTimeLaunch", isFirstTime)
             editor.apply()  // Use apply() instead of commit() for async write
+        }
+
+    var dateModifiedRegionalDB: String?
+        get() = pref.getString("dateModifiedRegionalDB", "")
+        set(hexDataWl) {
+            editor.putString("dateModifiedRegionalDB", hexDataWl)
+            editor.commit()
+        }
+
+    var dateModifiedWilayahDB: String?
+        get() = pref.getString("dateModifiedWilayahDB", "")
+        set(hexDataWl) {
+            editor.putString("dateModifiedWilayahDB", hexDataWl)
+            editor.commit()
+        }
+
+    var dateModifiedDeptDB: String?
+        get() = pref.getString("dateModifiedDeptDB", "")
+        set(hexDataWl) {
+            editor.putString("dateModifiedDeptDB", hexDataWl)
+            editor.commit()
+        }
+
+    var dateModifiedDivisiDB: String?
+        get() = pref.getString("dateModifiedDivisiDB", "")
+        set(hexDataWl) {
+            editor.putString("dateModifiedDivisiDB", hexDataWl)
+            editor.commit()
+        }
+
+    var dateModifiedBlokDB: String?
+        get() = pref.getString("dateModifiedBlokDB", "")
+        set(hexDataWl) {
+            editor.putString("dateModifiedBlokDB", hexDataWl)
+            editor.commit()
+        }
+
+    var dateModifiedTPHDB: String?
+        get() = pref.getString("dateModifiedTPHDB", "")
+        set(hexDataWl) {
+            editor.putString("dateModifiedTPHDB", hexDataWl)
+            editor.commit()
         }
 
     var version: Int

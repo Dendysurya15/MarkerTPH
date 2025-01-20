@@ -53,4 +53,13 @@ interface ApiService {
     @GET("downloadDatasetRegionalJson")
     suspend fun downloadDatasetRegionalJson(): Response<ResponseBody>
 
+
+    @GET("getTablesLatestModified")
+    suspend fun getTablesLatestModified(): Response<TablesModifiedResponse>
+
+    data class TablesModifiedResponse(
+        val statusCode: Int,
+        val message: String,
+        val data: Map<String, String?>
+    )
 }

@@ -49,6 +49,7 @@ import com.cbi.markertph.data.model.RegionalModel
 import com.cbi.markertph.data.model.TPHModel
 import com.cbi.markertph.data.model.TPHNewModel
 import com.cbi.markertph.data.model.WilayahModel
+import com.cbi.markertph.data.network.RetrofitClient
 import com.cbi.markertph.data.repository.TPHRepository
 import com.cbi.markertph.databinding.ActivityHomeBinding
 import com.cbi.markertph.databinding.PertanyaanSpinnerLayoutBinding
@@ -109,6 +110,8 @@ class HomeActivity : AppCompatActivity() {
     private var selectedAncak: String = ""
     var currentAccuracy : Float = 0F
 
+    private var filesToUpdate = mutableListOf<String>()
+
     private lateinit var dataCacheManager: DataCacheManager
     private lateinit var loadingDialog: LoadingDialog
     private var selectedRegionalValue: Int? = null
@@ -129,7 +132,6 @@ class HomeActivity : AppCompatActivity() {
             val locationManager = getSystemService(Context.LOCATION_SERVICE) as LocationManager
             val isGpsEnabled = locationManager.isProviderEnabled(LocationManager.GPS_PROVIDER)
 
-            // Only show toast if GPS is actually disabled in system settings
             if (!isGpsEnabled) {
                 locationViewModel.refreshLocationStatus()
                 locationEnable = false
@@ -241,18 +243,18 @@ class HomeActivity : AppCompatActivity() {
 
         binding.mbSaveDataTPH.setOnClickListener {
 
-//            if (currentAccuracy == null || currentAccuracy > 10.0f) {
-//                vibrate()
-//                AlertDialogUtility.withSingleAction(
-//                    this,
-//                    stringXML(R.string.al_back),
-//                    stringXML(R.string.al_location_not_accurate),
-//                    stringXML(R.string.al_location_under_ten_meter),
-//                    "warning.json",
-//                    R.color.colorRedDark
-//                ) {}
-//                return@setOnClickListener
-//            }
+            if (currentAccuracy == null || currentAccuracy > 10.0f) {
+                vibrate()
+                AlertDialogUtility.withSingleAction(
+                    this,
+                    stringXML(R.string.al_back),
+                    stringXML(R.string.al_location_not_accurate),
+                    stringXML(R.string.al_location_under_ten_meter),
+                    "warning.json",
+                    R.color.colorRedDark
+                ) {}
+                return@setOnClickListener
+            }
 
             if (validateAndShowErrors()) {
                 AlertDialogUtility.withTwoActions(
@@ -580,7 +582,6 @@ class HomeActivity : AppCompatActivity() {
             // Convert the decompressed bytes to a JSON string
             val jsonString = String(decompressedData, Charsets.UTF_8)
             Log.d("DecompressedJSON", "Decompressed JSON: $jsonString")
-
             parseJsonData(jsonString, isLastFile)
 
         } catch (e: Exception) {
@@ -596,16 +597,21 @@ class HomeActivity : AppCompatActivity() {
             val gson = Gson()
 
             val keyObject = jsonObject.getJSONObject("key")
+            val dateModified = jsonObject.getString("date_modified")
 
             // Parse CompanyCodeDB
             if (jsonObject.has("RegionalDB")) {
                 val companyCodeArray = jsonObject.getJSONArray("RegionalDB")
+
+                val dateModified = jsonObject.getString("date_modified")
                 val transformedCompanyCodeArray = transformJsonArray(companyCodeArray, keyObject)
                 val regionalList: List<RegionalModel> = gson.fromJson(
                     transformedCompanyCodeArray.toString(),
                     object : TypeToken<List<RegionalModel>>() {}.type
                 )
-                Log.d("ParsedData", "RegionalDB: $regionalList")
+
+                    prefManager?.setDateModified("RegionalDB", dateModified) // Store dynamically
+
                 this.regionalList = regionalList
             } else {
                 Log.e("ParseJsonData", "RegionalDB key is missing")
@@ -621,6 +627,7 @@ class HomeActivity : AppCompatActivity() {
                 )
                 Log.d("ParsedData", "WilayahDB: $wilayahList")
                 this.wilayahList = wilayahList
+                prefManager?.setDateModified("WilayahDB", dateModified) // Store dynamically
             } else {
                 Log.e("ParseJsonData", "WilayahDB key is missing")
             }
@@ -634,6 +641,7 @@ class HomeActivity : AppCompatActivity() {
                 )
                 Log.d("ParsedData", "BUnitCode: $deptList")
                 this.deptList = deptList
+                prefManager?.setDateModified("DeptDB", dateModified) // Store dynamically
             } else {
                 Log.e("ParseJsonData", "DeptDB key is missing")
             }
@@ -648,6 +656,7 @@ class HomeActivity : AppCompatActivity() {
                 )
                 Log.d("ParsedData", "DivisionCode: $divisiList")
                 this.divisiList = divisiList
+                prefManager?.setDateModified("DivisiDB", dateModified) // Store dynamically
             } else {
                 Log.e("ParseJsonData", "DivisiDB key is missing")
             }
@@ -662,6 +671,7 @@ class HomeActivity : AppCompatActivity() {
                 )
                 Log.d("ParsedData", "FieldCode: $blokList")
                 this.blokList = blokList
+                prefManager?.setDateModified("BlokDB", dateModified) // Store dynamically
             } else {
                 Log.e("ParseJsonData", "BlokDB key is missing")
             }
@@ -703,6 +713,8 @@ class HomeActivity : AppCompatActivity() {
         return transformedArray
     }
 
+
+
     private fun loadTPHData(jsonObject: JSONObject) {
         try {
             if (jsonObject.has("TPHDB")) {
@@ -734,11 +746,12 @@ class HomeActivity : AppCompatActivity() {
                     Log.d("LoadTPHData", "Processed chunk: $i to ${(i + chunkSize - 1).coerceAtMost(tphArray.length() - 1)}")
                 }
 
-                Log.d("testing", accumulatedTPHList.toString())
+
                 // Assign the accumulated list to the lazy-loaded tphList variable
                 this.tphList = accumulatedTPHList
+                val dateModified = jsonObject.getString("date_modified")
 
-                // Log the final size for debugging purposes
+                prefManager?.setDateModified("TPHDB", dateModified) // Store dynamically
                 Log.d("ParsedData", "Total TPHDB items: ${tphList?.size ?: 0}")
             } else {
                 Log.e("LoadTPHData", "TPHDB key is missing")
@@ -882,6 +895,15 @@ class HomeActivity : AppCompatActivity() {
                         val selectedFieldId = blokList.find { it.regional == selectedRegionalValue && it.tahun == selectedTahunTanamValue &&   it.kode == selectedBlok && it.dept == selectedEstateValue && it.divisi == selectedDivisiValue  }?.id
                         selectedBlokValue = selectedFieldId
 
+
+
+                        Log.d("testing", selectedRegionalValue.toString())
+                        Log.d("testing", selectedEstateValue.toString())
+                        Log.d("testing", selectedDivisiValue.toString())
+                        Log.d("testing", selectedBlok.toString())
+                        Log.d("testing", selectedBlokValue.toString())
+                        Log.d("testing", selectedTahunTanamValue.toString())
+
                         lifecycleScope.launch {
                             val filteredTPH = withContext(Dispatchers.Default) {
                                 tphList?.filter { tph ->
@@ -892,6 +914,8 @@ class HomeActivity : AppCompatActivity() {
                                             tph.blok == selectedBlokValue
                                 }
                             }
+
+                            Log.d("testing", filteredTPH.toString())
                             val mbSave = findViewById<MaterialButton>(R.id.mbSaveDataTPH)
                             if (!filteredTPH.isNullOrEmpty()) {
                                 val tphNumbers = filteredTPH.map { it.nomor }
@@ -929,8 +953,9 @@ class HomeActivity : AppCompatActivity() {
                         val selectedTPHLat = selectedTPHId?.lat
                         val selectedTPHLon = selectedTPHId?.lon
                         val selectedTPHUserInput = selectedTPHId?.user_input
-                        val selectedTPHUpdateDate = selectedTPHId?.update_date
+                        val selectedTPHUpdateDate =AppUtils.formatDateToIndonesian(selectedTPHId?.update_date!!)
                         val selectedTPHStatus = selectedTPHId?.status
+
 
 
                         val latPattern = "^-?([0-8]?[0-9]|90)\\.\\d+$".toRegex()
@@ -938,10 +963,14 @@ class HomeActivity : AppCompatActivity() {
 
                         if (selectedTPHLat?.matches(latPattern) == true &&
                             selectedTPHLon?.matches(lonPattern) == true) {
-                            detectLatInput.text = selectedTPHLat
-                            detectLonInput.text = selectedTPHLon
-                            detectUserInput.text = selectedTPHUserInput
-                            detectTanggalInput.text = selectedTPHUpdateDate
+                            detectLatInput.text = "Latitude: $selectedTPHLat"
+                            detectLonInput.text = "Longitude: $selectedTPHLon"
+                            val selectedTPHUserInput = "exampleInput" // Example input
+                            val formattedInput = selectedTPHUserInput.replaceFirstChar {
+                                if (it.isLowerCase()) it.titlecase() else it.toString()
+                            }
+                            detectUserInput.text = "User Input: $formattedInput"
+                            detectTanggalInput.text = "Last Update: $selectedTPHUpdateDate"
                             materialCardView.visibility = View.VISIBLE
                         } else {
                             materialCardView.visibility = View.GONE
@@ -1036,6 +1065,7 @@ class HomeActivity : AppCompatActivity() {
 
     fun resetSelectedTPH() {
         selectedTPHValue = null
+        selectedTPH = ""
     }
 
     private fun setupEditTextView(layoutBinding: PertanyaanSpinnerLayoutBinding) {
@@ -1102,6 +1132,10 @@ class HomeActivity : AppCompatActivity() {
 
     private fun validateAndShowErrors(): Boolean {
 
+
+
+        Log.d("testing", selectedTPH.toString())
+        Log.d("testing", selectedTPHValue.toString())
 
         var isValid = true
         val missingFields = mutableListOf<String>()
@@ -1346,10 +1380,13 @@ class HomeActivity : AppCompatActivity() {
             val filesToDownload = AppUtils.ApiCallManager.apiCallList.filterIndexed { index, pair ->
                 val fileName = pair.first
                 val file = File(this@HomeActivity.getExternalFilesDir(null), fileName)
-                val needsDownload = savedFileList.getOrNull(index) == null || !file.exists()
+                val needsDownload = savedFileList.getOrNull(index) == null || !file.exists() ||  filesToUpdate.contains(fileName)
                 Log.d("FileDownload", "File: $fileName, Needs download: $needsDownload")
                 needsDownload
             }
+
+
+//            Log.d("testing", filesToDownload.toString())
 
             val apiCallsSize = filesToDownload.size
             if (apiCallsSize == 0) {
@@ -1511,13 +1548,9 @@ class HomeActivity : AppCompatActivity() {
         }
     }
 
-    private fun shouldStartFileDownload(): Boolean {
-        val savedFileList = prefManager!!.getFileList() // Retrieve the saved file list
-        val downloadsDir = this.getExternalFilesDir(null) // Get the downloads directory
-
-        Log.d("FileCheck", "Saved file list: $savedFileList")
-        Log.d("FileCheck", "Downloads directory: $downloadsDir")
-        Log.d("FileCheck", "Is first time launch: ${prefManager!!.isFirstTimeLaunch}")
+    private suspend fun shouldStartFileDownload(): Boolean {
+        val savedFileList = prefManager!!.getFileList()
+        val downloadsDir = this.getExternalFilesDir(null)
 
         if (prefManager!!.isFirstTimeLaunch) {
             Log.d("FileCheck", "First time launch detected.")
@@ -1547,7 +1580,71 @@ class HomeActivity : AppCompatActivity() {
             return true
         }
 
-        return false
+
+        if (!isInternetAvailable()) {
+            Log.d("NetworkCheck", "No internet connection available")
+            filesToUpdate.clear()  // Clear any pending updates
+            return false
+        }
+
+        val shouldDownload = checkServerDates()
+        Log.d("testing", filesToUpdate.toString())
+        Log.d("testing", shouldDownload.toString())
+
+        return shouldDownload
+    }
+
+    private suspend fun checkServerDates(): Boolean {
+        try {
+            filesToUpdate.clear()
+
+            val response = RetrofitClient.instance.getTablesLatestModified()
+            if (response.isSuccessful && response.body()?.statusCode == 1) {
+                val serverData = response.body()?.data ?: return true
+                val localData = prefManager?.getAllDateModified() ?: return true
+
+                val keyMapping = mapOf(
+                    AppUtils.ApiCallManager.apiCallList[0].first to Pair("regional", "RegionalDB"),
+                    AppUtils.ApiCallManager.apiCallList[1].first to Pair("wilayah", "WilayahDB"),
+                    AppUtils.ApiCallManager.apiCallList[2].first to Pair("dept", "DeptDB"),
+                    AppUtils.ApiCallManager.apiCallList[3].first to Pair("divisi", "DivisiDB"),
+                    AppUtils.ApiCallManager.apiCallList[4].first to Pair("blok", "BlokDB"),
+                    AppUtils.ApiCallManager.apiCallList[5].first to Pair("tph", "TPHDB")
+                )
+
+                keyMapping.forEach { (filename, keys) ->
+                    val (serverKey, localKey) = keys
+                    val serverDate = serverData[serverKey]
+                    val localDate = localData[localKey]
+
+                    Log.d("DateComparison", """
+                    Comparing dates for $localKey:
+                    Server date ($serverKey): $serverDate
+                    Local date ($localKey): $localDate
+                """.trimIndent())
+
+                    if (serverDate != null && localDate != null) {
+                        val serverDateTime = SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.getDefault())
+                            .parse(serverDate)
+                        val localDateTime = SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.getDefault())
+                            .parse(localDate)
+
+                        if (serverDateTime != null && localDateTime != null) {
+                            if (serverDateTime.after(localDateTime)) {
+                                Log.d("DateComparison", "$localKey needs update: Server date is newer")
+                                filesToUpdate.add(filename)
+                            }
+                        }
+                    }
+                }
+
+                return filesToUpdate.isNotEmpty()
+            }
+            return true
+        } catch (e: Exception) {
+            Log.e("FileCheck", "Error checking server dates", e)
+            return true
+        }
     }
 
     private fun checkPermissions() {
@@ -1579,66 +1676,61 @@ class HomeActivity : AppCompatActivity() {
                 permissionRequestCode
             )
         } else {
-            if (shouldStartFileDownload()) {
-                Log.d("FileCheck", "Starting file download...")
-                startFileDownload()
-            } else {
-                lifecycleScope.launch(Dispatchers.IO) {
-                    withContext(Dispatchers.Main) {
-                        loadingDialog.show()  // Show loading at start
-                        loadingDialog.setMessage("Loading data...")
-                    }
+            lifecycleScope.launch {
+                val shouldDownload = shouldStartFileDownload()
+                if (shouldDownload) {
+                    Log.d("FileCheck", "Starting file download...")
+                    startFileDownload()
+                } else {
+                    lifecycleScope.launch(Dispatchers.IO) {
+                        withContext(Dispatchers.Main) {
+                            loadingDialog.show()
+                            loadingDialog.setMessage("Loading data...")
+                        }
 
-                    try {
-                        val cachedData = dataCacheManager.getDatasets()
+                        try {
+                            val cachedData = dataCacheManager.getDatasets()
 
+                            if (cachedData != null) {
+                                val hasEmptyDatasets =
+                                    cachedData.regionalList.isEmpty() || cachedData.wilayahList.isEmpty() ||
+                                            cachedData.deptList.isEmpty() ||
+                                            cachedData.divisiList.isEmpty() ||
+                                            cachedData.blokList.isEmpty() ||
+                                            cachedData.tphList.isEmpty()
 
-                        if (cachedData != null) {
-                            // Check if any of the datasets are empty
+                                if (hasEmptyDatasets) {
+                                    withContext(Dispatchers.Main) {
+                                        loadingDialog.dismiss()
+                                        loadAllFilesAsync()
+                                    }
+                                } else {
+                                    regionalList = cachedData.regionalList
+                                    wilayahList = cachedData.wilayahList
+                                    deptList = cachedData.deptList
+                                    divisiList = cachedData.divisiList
+                                    blokList = cachedData.blokList
+                                    tphList = cachedData.tphList
 
-
-
-                            val hasEmptyDatasets =
-                                cachedData.regionalList.isEmpty() || cachedData.wilayahList.isEmpty() ||
-                                    cachedData.deptList.isEmpty() ||
-                                    cachedData.divisiList.isEmpty() ||
-                                    cachedData.blokList.isEmpty() ||
-                                    cachedData.tphList.isEmpty()
-
-                            if (hasEmptyDatasets) {
+                                    withContext(Dispatchers.Main) {
+                                        loadingDialog.dismiss()
+                                        setupLayout()
+                                    }
+                                }
+                            } else {
+                                Log.d("testing", "masuk sini")
                                 withContext(Dispatchers.Main) {
                                     loadingDialog.dismiss()
                                     loadAllFilesAsync()
                                 }
-                            } else {
-
-                                regionalList = cachedData.regionalList
-                                wilayahList = cachedData.wilayahList
-                                deptList = cachedData.deptList
-                                divisiList = cachedData.divisiList
-                                blokList = cachedData.blokList
-                                tphList = cachedData.tphList
-
-                                withContext(Dispatchers.Main) {
-                                    loadingDialog.dismiss()
-                                    setupLayout()
-                                }
                             }
-                        } else {
-                            Log.d("testing", "masuk sini")
+                        } catch (e: Exception) {
+                            Log.e("DataLoading", "Error loading data: ${e.message}")
                             withContext(Dispatchers.Main) {
                                 loadingDialog.dismiss()
-                                loadAllFilesAsync()
                             }
                         }
-                    } catch (e: Exception) {
-                        Log.e("DataLoading", "Error loading data: ${e.message}")
-                        withContext(Dispatchers.Main) {
-                            loadingDialog.dismiss()
-                        }
                     }
-
-
                 }
             }
         }
@@ -1681,11 +1773,13 @@ class HomeActivity : AppCompatActivity() {
                     Toast.LENGTH_LONG
                 ).show()
             }else {
-                if (shouldStartFileDownload()) {
-                    Log.d("FileCheck", "Starting file download...")
-                    startFileDownload()
-                } else {
-                    Log.d("FileCheck", "File download not required.")
+                lifecycleScope.launch {
+                    if (shouldStartFileDownload()) {
+                        Log.d("FileCheck", "Starting file download...")
+                        startFileDownload()
+                    } else {
+                        Log.d("FileCheck", "File download not required.")
+                    }
                 }
             }
         }

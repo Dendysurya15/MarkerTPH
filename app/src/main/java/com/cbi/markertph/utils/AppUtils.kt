@@ -20,6 +20,8 @@ import com.karumi.dexter.Dexter
 import com.karumi.dexter.MultiplePermissionsReport
 import com.karumi.dexter.PermissionToken
 import com.karumi.dexter.listener.multi.MultiplePermissionsListener
+import java.text.SimpleDateFormat
+import java.util.Locale
 
 object AppUtils {
 
@@ -61,12 +63,8 @@ object AppUtils {
     }
 
     object ApiCallManager {
+//        noted : field ditengah merupakan nama db yg ada di server, harus sama !
         val apiCallList = listOf(
-//            Pair("datasetCompanyCode.zip", RetrofitClient.instance::downloadDatasetCompany),
-//            Pair("datasetBUnitCode.zip", RetrofitClient.instance::downloadDatasetBUnit),
-//            Pair("datasetDivisionCode.zip", RetrofitClient.instance::downloadDatasetDivision),
-//            Pair("datasetFieldCode.zip", RetrofitClient.instance::downloadDatasetField),
-//            Pair("datasetTPHCode.zip", RetrofitClient.instance::downloadDatasetTPH),
             Pair("datasetRegional.zip", RetrofitClient.instance::downloadDatasetRegionalJson),
             Pair("datasetWilayah.zip", RetrofitClient.instance::downloadDatasetWilayahJson),
             Pair("datasetDept.zip", RetrofitClient.instance::downloadDatasetDeptJson),
@@ -84,6 +82,20 @@ object AppUtils {
 
     fun getAppVersion(context: Context): String {
         return "${context.stringXML(R.string.version_word)} ${context.getString(R.string.app_version)}"
+    }
+
+    // Function to format the date
+    fun formatDateToIndonesian(dateString: String): String {
+        return try {
+            val inputFormat = SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.getDefault())
+            val outputFormat = SimpleDateFormat("dd MMMM yyyy", Locale("id", "ID")) // Indonesian format
+
+            val date = inputFormat.parse(dateString) // Parse input date
+            outputFormat.format(date!!)             // Format to Indonesian date
+        } catch (e: Exception) {
+            e.printStackTrace()
+            "Invalid Date" // Fallback in case of error
+        }
     }
 
     fun isInternetAvailable(context: Context): Boolean {
