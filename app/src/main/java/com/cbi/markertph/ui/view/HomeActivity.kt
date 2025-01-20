@@ -82,6 +82,7 @@ import org.json.JSONArray
 import org.json.JSONException
 import org.json.JSONObject
 import retrofit2.Response
+import java.io.ByteArrayOutputStream
 import java.io.File
 import java.io.FileOutputStream
 import java.text.SimpleDateFormat
@@ -112,6 +113,10 @@ class HomeActivity : AppCompatActivity() {
 
     private var filesToUpdate = mutableListOf<String>()
 
+    companion object {
+        private const val CHUNK_SIZE = 8192 // 8KB chunks
+        private const val DEFAULT_BUFFER_SIZE = 8192 * 4 // Increased buffer size for better performance
+    }
     private lateinit var dataCacheManager: DataCacheManager
     private lateinit var loadingDialog: LoadingDialog
     private var selectedRegionalValue: Int? = null
@@ -573,22 +578,164 @@ class HomeActivity : AppCompatActivity() {
         }
     }
 
-    private fun decompressFile(file: File,  isLastFile: Boolean) {
+    private fun decompressFile(file: File, isLastFile: Boolean) {
         try {
-            // Read the GZIP-compressed file directly
-            val gzipInputStream = GZIPInputStream(file.inputStream())
-            val decompressedData = gzipInputStream.readBytes()
-
-            // Convert the decompressed bytes to a JSON string
-            val jsonString = String(decompressedData, Charsets.UTF_8)
-            Log.d("DecompressedJSON", "Decompressed JSON: $jsonString")
-            parseJsonData(jsonString, isLastFile)
-
+            when (file.name) {
+                "datasetTPH.zip" -> handleLargeFileChunked(file, isLastFile)
+                else -> handleRegularFile(file, isLastFile)
+            }
         } catch (e: Exception) {
-            Log.e("DecompressFile", "Error decompressing file: ${e.message}")
+            Log.e("DecompressFile", "Error decompressing file (${file.name}): ${e.message}")
             e.printStackTrace()
         }
     }
+
+    private fun handleRegularFile(file: File, isLastFile: Boolean) {
+        GZIPInputStream(file.inputStream()).use { gzipInputStream ->
+            val decompressedData = gzipInputStream.readBytes()
+            val jsonString = String(decompressedData, Charsets.UTF_8)
+            parseJsonData(jsonString, isLastFile)
+        }
+    }
+
+    private fun handleLargeFileChunked(file: File, isLastFile: Boolean) {
+        try {
+            Log.d("HandleLargeFile", "Starting chunked processing of: ${file.name}")
+            val startTime = System.currentTimeMillis()
+
+            // Create a temporary file to store decompressed data
+            val tempFile = File(file.parent, "temp_decompressed.json")
+
+            // Step 1: Decompress the file
+            GZIPInputStream(file.inputStream().buffered(DEFAULT_BUFFER_SIZE)).use { gzipInputStream ->
+                FileOutputStream(tempFile).use { outputStream ->
+                    val buffer = ByteArray(CHUNK_SIZE)
+                    var totalBytes = 0L
+                    var bytesRead: Int
+
+                    while (gzipInputStream.read(buffer).also { bytesRead = it } != -1) {
+                        outputStream.write(buffer, 0, bytesRead)
+                        totalBytes += bytesRead
+                        if (totalBytes % (10 * 1024 * 1024) == 0L) {
+                            Log.d("HandleLargeFile", "Decompressed: ${totalBytes / (1024 * 1024)} MB")
+                        }
+                    }
+                    Log.d("HandleLargeFile", "Total decompressed size: ${totalBytes / (1024 * 1024)} MB")
+                }
+            }
+
+            // Step 2: Read and parse in a controlled way
+            try {
+                tempFile.inputStream().bufferedReader().use { reader ->
+                    val jsonContent = reader.readText()
+                    Log.d("HandleLargeFile", "JSON loaded into memory, size: ${jsonContent.length} chars")
+
+                    val jsonObject = JSONObject(jsonContent)
+                    Log.d("HandleLargeFile", "JSON successfully parsed")
+
+                    // Check if this is TPH data
+                    if (jsonObject.has("TPHDB")) {
+                        Log.d("HandleLargeFile", "Found TPHDB")
+                        // Process TPH data directly
+                        loadTPHData(jsonObject)
+                    } else {
+                        // Process other data
+                        Log.d("HandleLargeFile", "Processing regular data")
+                        parseJsonData(jsonContent, isLastFile)
+                    }
+                }
+            } catch (e: OutOfMemoryError) {
+                Log.e("HandleLargeFile", "OutOfMemoryError: ${e.message}")
+                System.gc() // Request garbage collection
+                e.printStackTrace()
+            } catch (e: JSONException) {
+                Log.e("HandleLargeFile", "JSON parsing error: ${e.message}")
+                e.printStackTrace()
+            }
+
+            // Clean up
+            tempFile.delete()
+
+            val endTime = System.currentTimeMillis()
+            Log.d("HandleLargeFile", "Total processing time: ${endTime - startTime} ms")
+
+        } catch (e: Exception) {
+            Log.e("HandleLargeFile", "Error in processing: ${e.message}")
+            e.printStackTrace()
+        }
+    }
+
+//    private fun loadTPHData(jsonObject: JSONObject) {
+//        try {
+//            Log.d("LoadTPHData", "Starting TPH data processing")
+//            val tphArray = jsonObject.getJSONArray("TPHDB")
+//            val keyObject = jsonObject.getJSONObject("key")
+//            val totalItems = tphArray.length()
+//
+//            // Increased chunk size for better performance
+//            val chunkSize = 5000
+//
+//            // Pre-allocate the ArrayList with expected capacity
+//            val accumulatedTPHList = ArrayList<TPHNewModel>(totalItems)
+//
+//            // Create Gson instance once
+//            val gson = Gson()
+//            val type = object : TypeToken<List<TPHNewModel>>() {}.type
+//
+//            // StringBuilder for JSON transformation
+//            val stringBuilder = StringBuilder(chunkSize * 200) // Approximate size per object
+//
+//            // Process the TPHDB array in larger chunks
+//            val chunks = totalItems / chunkSize + (if (totalItems % chunkSize > 0) 1 else 0)
+//            for (chunk in 0 until chunks) {
+//                val startIndex = chunk * chunkSize
+//                val endIndex = minOf(startIndex + chunkSize, totalItems)
+//
+//                // Create chunk array with pre-allocated capacity
+//                val jsonChunk = JSONArray()
+//
+//                // Build chunk
+//                for (i in startIndex until endIndex) {
+//                    jsonChunk.put(tphArray.getJSONObject(i))
+//                }
+//
+//                // Transform and parse in one go
+//                stringBuilder.setLength(0) // Clear StringBuilder
+//                val transformedChunk = transformJsonArray(jsonChunk, keyObject)
+//
+//                // Parse and add to list
+//                val chunkList: List<TPHNewModel> = gson.fromJson(
+//                    transformedChunk.toString(),
+//                    type
+//                )
+//
+//                accumulatedTPHList.addAll(chunkList)
+//
+//                // Log progress every 20k items
+//                if (startIndex % 20000 == 0) {
+//                    val progress = (startIndex.toFloat() / totalItems * 100).toInt()
+//                    Log.d("LoadTPHData", "Progress: $progress% ($startIndex/$totalItems)")
+//
+//                    // Request garbage collection if memory pressure is high
+//                    if (Runtime.getRuntime().freeMemory() < Runtime.getRuntime().totalMemory() * 0.2) {
+//                        System.gc()
+//                    }
+//                }
+//            }
+//
+//
+//            this.tphList = accumulatedTPHList
+//
+//            val dateModified = jsonObject.getString("date_modified")
+//            prefManager?.setDateModified("TPHDB", dateModified)
+//
+//            Log.d("LoadTPHData", "Completed processing $totalItems TPH items")
+//
+//        } catch (e: Exception) {
+//            Log.e("LoadTPHData", "Error processing TPH data: ${e.message}")
+//            e.printStackTrace()
+//        }
+//    }
 
 
     private fun parseJsonData(jsonString: String,  isLastFile: Boolean) {
@@ -664,7 +811,7 @@ class HomeActivity : AppCompatActivity() {
             // Parse FieldCodeDB
             if (jsonObject.has("BlokDB")) {
                 val fieldCodeArray = jsonObject.getJSONArray("BlokDB")
-                val transformedFieldCodeArray = transformJsonArray(fieldCodeArray, keyObject)
+                val transformedFieldCodeArray = transformJsonArrayInChunks(fieldCodeArray, keyObject)
                 val blokList: List<BlokModel> = gson.fromJson(
                     transformedFieldCodeArray.toString(),
                     object : TypeToken<List<BlokModel>>() {}.type
@@ -676,6 +823,12 @@ class HomeActivity : AppCompatActivity() {
                 Log.e("ParseJsonData", "BlokDB key is missing")
             }
 
+
+//            if (isLastFile) {
+//                Log.d("ParsedData", "masuk ges ? ")
+//                loadTPHData(jsonObject)
+//            }
+
             // Cache lightweight data
             this.regionalList = regionalList
             this.wilayahList = wilayahList
@@ -684,10 +837,6 @@ class HomeActivity : AppCompatActivity() {
             this.blokList = blokList
 
 
-            if (isLastFile) {
-                Log.d("ParsedData", "masuk ges ? ")
-                loadTPHData(jsonObject)
-            }
 
         } catch (e: JSONException) {
             Log.e("ParseJsonData", "Error parsing JSON: ${e.message}")
@@ -714,10 +863,42 @@ class HomeActivity : AppCompatActivity() {
     }
 
 
+    fun transformJsonArrayInChunks(jsonArray: JSONArray, keyObject: JSONObject): JSONArray {
+        val transformedArray = JSONArray()
+        val chunkSize = 30 // Adjust this based on your needs
+
+        try {
+            for (i in 0 until jsonArray.length()) {
+                val item = jsonArray.getJSONObject(i)
+                val transformedItem = JSONObject()
+
+                keyObject.keys().forEach { key ->
+                    val fieldName = keyObject.getString(key)
+                    val fieldValue = item.get(key)
+                    transformedItem.put(fieldName, fieldValue)
+                }
+
+                transformedArray.put(transformedItem)
+
+                // After each chunk is processed, suggest garbage collection
+                if (i % chunkSize == 0) {
+                    System.gc()
+                }
+            }
+        } catch (e: Exception) {
+            Log.e("Transform", "Error transforming array: ${e.message}")
+        }
+
+        return transformedArray
+    }
+
+
+
 
     private fun loadTPHData(jsonObject: JSONObject) {
         try {
             if (jsonObject.has("TPHDB")) {
+                Log.d("testing", "masuk sini ges")
                 val tphArray = jsonObject.getJSONArray("TPHDB")
                 val keyObject = jsonObject.getJSONObject("key")
                 val chunkSize = 50 // Adjust the chunk size as needed
@@ -1505,10 +1686,21 @@ class HomeActivity : AppCompatActivity() {
                     val responseBody = response.body()
                     if (responseBody != null) {
                         val file = File(downloadsDir, fileName)
-                        saveFileToStorage(responseBody, file)
-                        fileList.add(fileName)
-                        Log.d("FileDownload", "$fileName downloaded successfully.")
-                        Pair(true, "Unduh Selesai")
+                        try {
+                            val success = saveFileToStorage(responseBody, file)
+                            if (success) {
+                                fileList.add(fileName)
+                                Log.d("FileDownload", "$fileName downloaded successfully.")
+                                Pair(true, "Unduh Selesai")
+                            } else {
+                                fileList.add(null)
+                                Pair(false, "Gagal menyimpan file")
+                            }
+                        } catch (e: Exception) {
+                            fileList.add(null)
+                            Log.e("FileDownload", "Error saving file: ${e.message}")
+                            Pair(false, "Unduh Gagal! Gagal menyimpan file")
+                        }
                     } else {
                         fileList.add(null)
                         Log.e("FileDownload", "Response body is null.")
@@ -1516,21 +1708,30 @@ class HomeActivity : AppCompatActivity() {
                     }
                 } else {
                     fileList.add(null)
-                    try {
+                    val errorMessage = try {
                         val errorBody = response.errorBody()?.string()
-                        val gson = Gson()
-                        val errorResponse = gson.fromJson(errorBody, ErrorResponse::class.java)
-                        Log.e("FileDownload", "Error message: ${errorResponse.message}")
-                        Pair(false, "Unduh Gagal! ${errorResponse.message}")  // Added prefix here
+                        if (!errorBody.isNullOrEmpty()) {
+                            val gson = Gson()
+                            try {
+                                val errorResponse = gson.fromJson(errorBody, ErrorResponse::class.java)
+                                errorResponse.message
+                            } catch (e: Exception) {
+                                "Error code: ${response.code()}"
+                            }
+                        } else {
+                            "Error code: ${response.code()}"
+                        }
                     } catch (e: Exception) {
-                        Pair(false, "Unduh Gagal! Kode: ${response.code()}")  // Added prefix here
+                        Log.e("FileDownload", "Error handling response", e)
+                        "Error code: ${response.code()}"
                     }
+                    Pair(false, "Unduh Gagal! $errorMessage")
                 }
             }
         } catch (e: Exception) {
             fileList.add(null)
             Log.e("FileDownload", "Error downloading file: ${e.message}")
-            Pair(false, "Unduh Gagal! ${e.message}")  // Added prefix here
+            Pair(false, "Unduh Gagal! ${e.message ?: "Unknown error"}")
         }
     }
 

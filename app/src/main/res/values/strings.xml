@@ -74,4 +74,11 @@
 
     <string name="download_dataset">Sedang mengunduh dataset</string>
     <string name="fetching_dataset">Sedang mengambil dataset</string>
+
+    <string name="dataset_regional_filename">datasetRegional.zip</string>
+    <string name="dataset_wilayah_filename">datasetWilayah.zip</string>
+    <string name="dataset_dept_filename">datasetDept.zip</string>
+    <string name="dataset_divisi_filename">datasetDivisi.zip</string>
+    <string name="dataset_blok_filename">datasetBlok.zip</string>
+    <string name="dataset_tph_filename">datasetTPH.zip</string>
 </resources>
