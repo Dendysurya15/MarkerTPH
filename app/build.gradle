@@ -36,7 +36,11 @@ android {
             resValue "string", "app_version",
                     "${defaultConfig.versionName}"
             minifyEnabled true
-            proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
+            shrinkResources true
+            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
+            // Add these lines
+            proguardFile 'proguard-gson.pro'
+            proguardFile 'proguard-retrofit.pro'
         }
     }
     compileOptions {

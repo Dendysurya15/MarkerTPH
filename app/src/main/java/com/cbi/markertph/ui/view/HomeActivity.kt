@@ -64,6 +64,7 @@ import com.cbi.markertph.utils.AppUtils.vibrate
 import com.cbi.markertph.utils.DataCacheManager
 import com.cbi.markertph.utils.LoadingDialog
 import com.cbi.markertph.utils.PrefManager
+import com.cbi.markertph.utils.ReleaseLogger
 import com.google.android.gms.location.LocationAvailability
 import com.google.android.gms.location.LocationCallback
 import com.google.android.gms.location.LocationRequest
@@ -533,30 +534,42 @@ class HomeActivity : AppCompatActivity() {
 
     private fun loadAllFilesAsync() {
         val filesToDownload = AppUtils.ApiCallManager.apiCallList.map { it.first }
+        ReleaseLogger.d("LoadFiles", "Starting to load files: ${filesToDownload.joinToString()}")
+
         loadingDialog.show()
         val progressJob = lifecycleScope.launch(Dispatchers.Main) {
             var dots = 1
             while (true) {
                 loadingDialog.setMessage("${stringXML(R.string.fetching_dataset)}${".".repeat(dots)}")
                 dots = if (dots >= 3) 1 else dots + 1
-                delay(500) // Update every 500ms
+                delay(500)
             }
         }
 
         lifecycleScope.launch {
             try {
                 withContext(Dispatchers.IO) {
-
-
-                    filesToDownload.forEachIndexed  { index, fileName ->
+                    filesToDownload.forEachIndexed { index, fileName ->
+                        ReleaseLogger.d("LoadFiles", "Processing file $fileName (${index + 1}/${filesToDownload.size})")
                         val file = File(application.getExternalFilesDir(null), fileName)
                         if (file.exists()) {
-                            decompressFile(file, index == filesToDownload.lastIndex) // Process each file
+                            ReleaseLogger.d("LoadFiles", "File exists: ${file.length()} bytes")
+                            decompressFile(file, index == filesToDownload.lastIndex)
                         } else {
-                            Log.e("LoadFileAsync", "File not found: $fileName")
+                            ReleaseLogger.e("LoadFiles", "File not found: $fileName")
                         }
                     }
                 }
+
+                ReleaseLogger.d("LoadFiles", """
+                Data loaded:
+                - Regionals: ${regionalList.size}
+                - Wilayah: ${wilayahList.size}
+                - Dept: ${deptList.size}
+                - Divisi: ${divisiList.size}
+                - Blok: ${blokList.size}
+                - TPH: ${tphList?.size ?: 0}
+            """.trimIndent())
 
                 dataCacheManager.saveDatasets(
                     regionalList,
@@ -567,7 +580,7 @@ class HomeActivity : AppCompatActivity() {
                     tphList!!
                 )
             } catch (e: Exception) {
-                Log.e("LoadFileAsync", "Error: ${e.message}")
+                ReleaseLogger.e("LoadFiles", "Error loading files", e)
             } finally {
                 withContext(Dispatchers.Main) {
                     loadingDialog.dismiss()
@@ -580,13 +593,25 @@ class HomeActivity : AppCompatActivity() {
 
     private fun decompressFile(file: File, isLastFile: Boolean) {
         try {
+            ReleaseLogger.d("Decompress", "Starting decompression of ${file.name}")
+
             when (file.name) {
-                "datasetTPH.zip" -> handleLargeFileChunked(file, isLastFile)
-                else -> handleRegularFile(file, isLastFile)
+                "datasetTPH.zip" -> {
+                    ReleaseLogger.d("Decompress", "Processing large TPH file")
+                    handleLargeFileChunked(file, isLastFile)
+                }
+                else -> {
+                    GZIPInputStream(file.inputStream()).use { gzipInputStream ->
+                        val decompressedData = gzipInputStream.readBytes()
+                        ReleaseLogger.d("Decompress", "Decompressed ${file.name}: ${decompressedData.size} bytes")
+                        val jsonString = String(decompressedData, Charsets.UTF_8)
+                        parseJsonData(jsonString, isLastFile)
+                    }
+                }
             }
         } catch (e: Exception) {
-            Log.e("DecompressFile", "Error decompressing file (${file.name}): ${e.message}")
-            e.printStackTrace()
+            ReleaseLogger.e("Decompress", "Error processing ${file.name}", e)
+            throw e
         }
     }
 
@@ -738,7 +763,8 @@ class HomeActivity : AppCompatActivity() {
 //    }
 
 
-    private fun parseJsonData(jsonString: String,  isLastFile: Boolean) {
+    @SuppressLint("SuspiciousIndentation")
+    private fun parseJsonData(jsonString: String, isLastFile: Boolean) {
         try {
             val jsonObject = JSONObject(jsonString)
             val gson = Gson()
@@ -757,7 +783,7 @@ class HomeActivity : AppCompatActivity() {
                     object : TypeToken<List<RegionalModel>>() {}.type
                 )
 
-                    prefManager?.setDateModified("RegionalDB", dateModified) // Store dynamically
+                prefManager?.setDateModified("RegionalDB", dateModified) // Store dynamically
 
                 this.regionalList = regionalList
             } else {
