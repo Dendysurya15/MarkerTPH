@@ -32,35 +32,6 @@ object AppUtils {
 
     const val REQUEST_CHECK_SETTINGS = 0x1
 
-    @RequiresApi(Build.VERSION_CODES.R)
-    fun checkGeneralPermissions(context: Context, activity: Activity) {
-        Dexter.withContext(context)
-            .withPermissions(
-                Manifest.permission.MANAGE_EXTERNAL_STORAGE,
-                Manifest.permission.WRITE_SETTINGS,
-                Manifest.permission.WRITE_SECURE_SETTINGS,
-                Manifest.permission.READ_EXTERNAL_STORAGE,
-                Manifest.permission.WRITE_EXTERNAL_STORAGE,
-                Manifest.permission.INTERNET,
-                Manifest.permission.READ_PHONE_STATE,
-                Manifest.permission.ACCESS_FINE_LOCATION, // Add fine location permission
-                Manifest.permission.ACCESS_COARSE_LOCATION // Add coarse location permission (optional)
-            ).withListener(object : MultiplePermissionsListener {
-                override fun onPermissionsChecked(report: MultiplePermissionsReport) {
-                }
-
-                override fun onPermissionRationaleShouldBeShown(
-                    permissions: List<com.karumi.dexter.listener.PermissionRequest>,
-                    token: PermissionToken
-                ) {
-                    ActivityCompat.shouldShowRequestPermissionRationale(
-                        activity,
-                        Manifest.permission.CAMERA
-                    )
-                }
-            }).check()
-
-    }
 
     object ApiCallManager {
 //        noted : field ditengah merupakan nama db yg ada di server, harus sama !

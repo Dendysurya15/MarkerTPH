@@ -3,6 +3,7 @@ package com.cbi.markertph.data.repository
 import android.annotation.SuppressLint
 import android.content.ContentValues
 import android.content.Context
+import android.database.sqlite.SQLiteConstraintException
 import android.database.sqlite.SQLiteDatabase
 import android.database.sqlite.SQLiteException
 import android.util.Base64
@@ -453,9 +454,26 @@ class TPHRepository(context: Context) {
             put(DatabaseHelper.KEY_APP_VERSION, data.app_version)
         }
 
-        val rowsAffected = db.insert(DatabaseHelper.DB_TABLE_KOORDINAT_TPH, null, values)
-        return rowsAffected > 0
+        return try {
+            val rowId = db.insert(DatabaseHelper.DB_TABLE_KOORDINAT_TPH, null, values)
+            if (rowId == -1L) {
+                Log.e("DBError", "Insert failed! Database constraint or full")
+                false
+            } else {
+                true
+            }
+        } catch (e: SQLiteConstraintException) {
+            Log.e("DBError", "Constraint violation: ${e.message}", e)
+            false
+        } catch (e: SQLiteException) {
+            Log.e("DBError", "Database error: ${e.message}", e)
+            false
+        } catch (e: Exception) {
+            Log.e("DBError", "Unexpected error: ${e.message}", e)
+            false
+        }
     }
+
 
     @SuppressLint("Range")
     fun fetchAllData(archive: Int = 0): List<KoordinatTPHModel> {
@@ -596,7 +614,7 @@ class TPHRepository(context: Context) {
                             Log.d(TAG, "Response successful. Status code: ${uploadResponse.statusCode}")
 
                             when (uploadResponse.statusCode) {
-                                2 -> {  // All duplicated
+                                2 -> {
                                     Log.d(TAG, "All records are duplicates")
 
                                     AlertDialogUtility.withSingleAction(
@@ -622,26 +640,28 @@ class TPHRepository(context: Context) {
                                         dataList.forEach { data ->
                                             val wasStored = storedData?.any { stored ->
                                                 (stored as? Map<*, *>)?.let { map ->
+
+                                                   val regComparison = map["regional"].toString() == data.regional.toString()
                                                     val deptComparison = map["dept"].toString() == data.dept.toString()
-                                                    val divisiComparison = map["divisi"].toString() == data.divisi.toString()
-                                                    val tahunComparison = map["tahun"].toString() == data.tahun.toString()
-                                                    val blokComparison = map["blok"].toString() == data.blok.toString()
                                                     val nomorComparison = map["nomor"].toString() == data.nomor.toString()
-                                                    val id_tph = map["id_tph"].toString() == data.id_tph.toString()
+                                                    val id_tphComparison = map["id"]?.toString()?.toDoubleOrNull()?.toInt() == data.id_tph!!.toInt()
+                                                    val user_inputComparison = map["user_input"].toString() == data.user_input.toString()
+                                                    val latComparison = map["lat"].toString() == data.lat.toString()
+                                                    val lonComparison = map["lon"].toString() == data.lon.toString()
 
-                                                    // Log detailed comparisons
-                                                    Log.d("testing", "Comparing dept: ${map["dept"]} with ${data.dept} -> $deptComparison")
-                                                    Log.d("testing", "Comparing divisi: ${map["divisi"]} with ${data.divisi} -> $divisiComparison")
-                                                    Log.d("testing", "Comparing tahun: ${map["tahun"]} with ${data.tahun} -> $tahunComparison")
-                                                    Log.d("testing", "Comparing blok: ${map["blok"]} with ${data.blok} -> $blokComparison")
-                                                    Log.d("testing", "Comparing nomor: ${map["nomor"]} with ${data.nomor} -> $nomorComparison")
-                                                    Log.d("testing", "Id_TPH: ${map["id_tph"]} with ${data.id_tph} -> $nomorComparison")
+//                                                    // Log the individual comparisons for clarity
+//                                                    Log.d("testing", "Comparing regional: ${map["regional"]} with ${data.regional} -> $regComparison")
+//                                                    Log.d("testing", "Comparing dept: ${map["dept"]} with ${data.dept} -> $deptComparison")
+//                                                    Log.d("testing", "Comparing nomor: ${map["nomor"]} with ${data.nomor} -> $nomorComparison")
+//                                                    Log.d("testing", "Comparing id_tph: ${map["id"]} with ${data.id_tph} -> $id_tphComparison")
+//                                                    Log.d("testing", "Comparing user_input: ${map["user_input"]} with ${data.user_input} -> $user_inputComparison")
+//                                                    Log.d("testing", "Comparing lat: ${map["lat"]} with ${data.lat} -> $latComparison")
+//                                                    Log.d("testing", "Comparing lon: ${map["lon"]} with ${data.lon} -> $lonComparison")
+//                                                    // Log the full map and data being compared
+//                                                    Log.d("DetailedMap", "Map: $map")
+//                                                    Log.d("DetailedData", "Data: $data")
 
-                                                    // Log the full map and data being compared
-                                                    Log.d("DetailedMap", "Map: $map")
-                                                    Log.d("DetailedData", "Data: $data")
-
-                                                    deptComparison && divisiComparison && tahunComparison && blokComparison && nomorComparison
+                                                    id_tphComparison &&  regComparison && deptComparison  && nomorComparison && user_inputComparison && latComparison && lonComparison
                                                 } ?: false
                                             } ?: false
 
@@ -657,20 +677,20 @@ class TPHRepository(context: Context) {
                                         }
 
                                         // Show appropriate message based on what happened
-                                        if (duplicateCount > 0) {
-                                            // If there are both new and duplicate records, show a dialog that requires acknowledgment
-                                            AlertDialogUtility.withSingleAction(
-                                                context,
-                                                context.stringXML(R.string.al_back),
-                                                context.stringXML(R.string.al_success_upload),
-                                                "${context.stringXML(R.string.al_success_upload_description)} ${successfulUpdates} data\n" +
-                                                        "${duplicateCount} ${context.stringXML(R.string.al_data_duplicate_description)}",
-                                                "success.json",
-                                                R.color.orange
-                                            ) {
-
-                                            }
-                                        } else {
+//                                        if (duplicateCount > 0) {
+//                                            // If there are both new and duplicate records, show a dialog that requires acknowledgment
+//                                            AlertDialogUtility.withSingleAction(
+//                                                context,
+//                                                context.stringXML(R.string.al_back),
+//                                                context.stringXML(R.string.al_success_upload),
+//                                                "${context.stringXML(R.string.al_success_upload_description)} ${successfulUpdates} data\n" +
+//                                                        "${duplicateCount} ${context.stringXML(R.string.al_data_duplicate_description)}",
+//                                                "success.json",
+//                                                R.color.orange
+//                                            ) {
+//
+//                                            }
+//                                        } else {
                                             // If all records are new and successful, show auto-dismissing success dialog
                                             AlertDialogUtility.alertDialogAction(
                                                 context,
@@ -680,7 +700,7 @@ class TPHRepository(context: Context) {
                                             ) {
                                                 Log.d(TAG, "Success dialog auto-dismissed")
                                             }
-                                        }
+//                                        }
 
                                         result.postValue(Result.success(uploadResponse))
                                     } catch (e: Exception) {

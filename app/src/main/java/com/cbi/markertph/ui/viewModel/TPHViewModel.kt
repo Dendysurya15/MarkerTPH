@@ -25,8 +25,8 @@ import kotlinx.coroutines.withContext
 
 class TPHViewModel(application: Application, private val repository: TPHRepository) : AndroidViewModel(application){
 
-    private val _insertDBTPH = MutableLiveData<Boolean>()
-    val insertDBTPH: LiveData<Boolean> get() = _insertDBTPH
+    private val _insertDBTPH = MutableLiveData<Pair<Boolean, String?>>()
+    val insertDBTPH: LiveData<Pair<Boolean, String?>> = _insertDBTPH
 
 
     private val _dataTPHAll = MutableLiveData<List<KoordinatTPHModel>>()
@@ -191,41 +191,40 @@ class TPHViewModel(application: Application, private val repository: TPHReposito
         id: Int? = 0,
         tanggal: String,
         user_input: String,
-        regional :String,
-        regional_id : Int,
-        wilayah : String,
-        wilayah_id :Int,
+        regional: String,
+        regional_id: Int,
+        wilayah: String,
+        wilayah_id: Int,
         estate: String,
         id_estate: Int,
         afdeling: String,
         id_afdeling: Int,
-        tahun_tanam : String,
+        tahun_tanam: String,
         blok: String,
         id_blok: Int,
         ancak: String,
         tph: String,
         id_tph: Int,
-        panen_ulang : Int,
+        panen_ulang: Int,
         latitude: String,
         longitude: String,
         app_version: String
     ) {
         viewModelScope.launch {
             try {
-
                 val data = KoordinatTPHModel(
                     id!!,
                     tanggal,
                     user_input,
-                    regional ,
+                    regional,
                     regional_id,
-                    wilayah ,
-                    wilayah_id ,
+                    wilayah,
+                    wilayah_id,
                     estate,
                     id_estate,
                     afdeling,
                     id_afdeling,
-                    tahun_tanam ,
+                    tahun_tanam,
                     blok,
                     id_blok,
                     ancak,
@@ -238,15 +237,15 @@ class TPHViewModel(application: Application, private val repository: TPHReposito
                     app_version
                 )
 
-
                 // Insert data into the repository
                 val isInserted = repository.insertKoordinatTPHRepo(data)
 
-                // Update LiveData
-                _insertDBTPH.postValue(isInserted)
+                // Update LiveData with Pair of success status and null message
+                _insertDBTPH.postValue(Pair(isInserted, null))
             } catch (e: Exception) {
                 e.printStackTrace()
-                _insertDBTPH.postValue(false)
+                // Update LiveData with Pair of false and error message
+                _insertDBTPH.postValue(Pair(false, e.message ?: "Unknown error occurred"))
             }
         }
     }

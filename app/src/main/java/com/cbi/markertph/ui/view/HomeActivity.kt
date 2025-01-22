@@ -296,7 +296,9 @@ class HomeActivity : AppCompatActivity() {
                         app_version = app_version.toString(),
                     )
 
-                    tphViewModel.insertDBTPH.observe(this) { isInserted ->
+                    tphViewModel.insertDBTPH.observe(this) { result ->
+                        val (isInserted, errorMessage) = result  // Destructuring the Pair
+
                         if (isInserted) {
                             AlertDialogUtility.alertDialogAction(
                                 this,
@@ -304,46 +306,20 @@ class HomeActivity : AppCompatActivity() {
                                 getString(R.string.al_description_success_save_local),
                                 "success.json"
                             ) {
-                                prefManager?.let {
-                                    it.user_input = userInput ?: ""
-                                    Log.d("PrefManager", "user_input set to: ${it.user_input}")
-
-                                    it.id_selected_regional = selectedRegionalSpinnerIndex ?: -1
-                                    Log.d("PrefManager", "id_selected_regional set to: ${it.id_selected_regional}")
-
-                                    it.id_selected_wilayah = selectedWilayahSpinnerIndex ?: -1
-                                    Log.d("PrefManager", "id_selected_wilayah set to: ${it.id_selected_wilayah}")
-
-                                    it.id_selected_estate = selectedEstateSpinnerIndex ?: -1
-                                    Log.d("PrefManager", "id_selected_estate set to: ${it.id_selected_estate}")
-
-                                    it.id_selected_afdeling = selectedDivisionSpinnerIndex ?: -1
-                                    Log.d("PrefManager", "id_selected_afdeling set to: ${it.id_selected_afdeling}")
-
-                                    it.id_selected_tahun_tanam = (selectedTahunTanamValue ?: -1).toString()
-                                    Log.d("PrefManager", "id_selected_tahun_tanam set to: ${it.id_selected_tahun_tanam}")
-
-                                    it.id_selected_blok = selectedFieldCodeSpinnerIndex ?: -1
-                                    Log.d("PrefManager", "id_selected_blok set to: ${it.id_selected_blok}")
-
-                                    it.ancak_input = ancakInput ?: ""
-                                    Log.d("PrefManager", "ancak_input set to: ${it.ancak_input}")
-
-                                    it.id_selected_tph = selectedTPHSpinnerIndex ?: -1
-                                    Log.d("PrefManager", "id_selected_tph set to: ${it.id_selected_tph}")
-                                } ?: Log.e("PrefManager", "PrefManager instance is null!")
-
+                                // Your existing success handling code
                             }
                         } else {
                             AlertDialogUtility.alertDialogAction(
                                 this,
                                 getString(R.string.al_failed_save_local),
-                                getString(R.string.al_description_failed_save_local),
+                                "${getString(R.string.al_description_failed_save_local)} $errorMessage",
                                 "warning.json"
                             ) {}
+
+                            // Show error message in Toast if available
                             Toast.makeText(
                                 this,
-                                getString(R.string.toast_failed_save_local),
+                                errorMessage ?: getString(R.string.toast_failed_save_local),
                                 Toast.LENGTH_LONG
                             ).show()
                         }
@@ -532,7 +508,7 @@ class HomeActivity : AppCompatActivity() {
 
     }
 
-    private fun loadAllFilesAsync() {
+        private fun loadAllFilesAsync() {
         val filesToDownload = AppUtils.ApiCallManager.apiCallList.map { it.first }
         ReleaseLogger.d("LoadFiles", "Starting to load files: ${filesToDownload.joinToString()}")
 
@@ -615,13 +591,6 @@ class HomeActivity : AppCompatActivity() {
         }
     }
 
-    private fun handleRegularFile(file: File, isLastFile: Boolean) {
-        GZIPInputStream(file.inputStream()).use { gzipInputStream ->
-            val decompressedData = gzipInputStream.readBytes()
-            val jsonString = String(decompressedData, Charsets.UTF_8)
-            parseJsonData(jsonString, isLastFile)
-        }
-    }
 
     private fun handleLargeFileChunked(file: File, isLastFile: Boolean) {
         try {
@@ -1043,6 +1012,7 @@ class HomeActivity : AppCompatActivity() {
 
                         if (selectedEstateId != null){
                             val filteredDivisiList = divisiList.filter{it.dept == selectedEstateId}
+                            Log.d("testing", filteredDivisiList.toString())
                             val divisiCodeNames = filteredDivisiList.map{it.abbr}
                             if (divisiCodeNames.isNotEmpty()){
                                 setupSpinnerView(binding.layoutAfdeling, divisiCodeNames)
@@ -1062,15 +1032,26 @@ class HomeActivity : AppCompatActivity() {
                         selectedDivisionSpinnerIndex = position
                         selectedDivisiValue = selectedDivisiId
 
+                        Log.d("testing", selectedRegionalValue.toString())
+                        Log.d("testing", selectedEstateValue.toString())
+                        Log.d("testing", selectedDivisiValue.toString())
+
                         if (selectedDivisiId != null){
-                            val filteredBlokList = blokList.filter{it.regional == selectedRegionalValue && it.dept == selectedEstateValue  && it.divisi == selectedDivisiId}
 
-                            val tahunTanamList = filteredBlokList.map{it.tahun}.distinct().sorted()
+                            val estateAbbr = deptList.find { it.id == selectedEstateValue }?.abbr
 
-                            if (tahunTanamList.isNotEmpty()){
+                            val filteredBlokList = blokList.filter {
+                                it.regional == selectedRegionalValue &&
+                                        it.dept == selectedEstateValue &&
+                                        (it.divisi == selectedDivisiId || it.dept_abbr == estateAbbr)
+                            }
+
+                            val tahunTanamList = filteredBlokList.map { it.tahun }.distinct().sorted()
+
+                            if (tahunTanamList.isNotEmpty()) {
                                 setupSpinnerView(binding.layoutTahunTanam, tahunTanamList)
                                 binding.layoutTahunTanam.root.visibility = View.VISIBLE
-                            }else{
+                            } else {
                                 binding.layoutTahunTanam.root.visibility = View.GONE
                             }
                         }else{
@@ -1078,12 +1059,18 @@ class HomeActivity : AppCompatActivity() {
                         }
 
                     }
-                    stringXML(R.string.field_tahun_tanam)->{
+                    stringXML(R.string.field_tahun_tanam) -> {
                         val selectedTahunTanam = item.toString()
                         resetViewsBelow(binding.layoutTahunTanam)
                         selectedTahunTanamValue = selectedTahunTanam
-                        val filteredBlokCodes = blokList.filter { it ->
-                            it.regional == selectedRegionalValue && it.dept == selectedEstateValue && it.divisi == selectedDivisiValue  && it.tahun == selectedTahunTanamValue
+
+                        val estateAbbr = deptList.find { it.id == selectedEstateValue }?.abbr
+
+                        val filteredBlokCodes = blokList.filter {
+                            it.regional == selectedRegionalValue &&
+                                    it.dept == selectedEstateValue &&
+                                    (it.divisi == selectedDivisiValue || it.dept_abbr == estateAbbr) &&
+                                    it.tahun == selectedTahunTanamValue
                         }
 
                         if (filteredBlokCodes.isNotEmpty()) {
@@ -1099,11 +1086,21 @@ class HomeActivity : AppCompatActivity() {
                         binding.layoutAncak.root.visibility = View.VISIBLE
                         selectedBlok = item.toString()
                         selectedFieldCodeSpinnerIndex = position
-                        val selectedFieldId = blokList.find { it.regional == selectedRegionalValue && it.tahun == selectedTahunTanamValue &&   it.kode == selectedBlok && it.dept == selectedEstateValue && it.divisi == selectedDivisiValue  }?.id
+
+                        // Fetch the estate abbreviation for fallback filtering
+                        val estateAbbr = deptList.find { it.id == selectedEstateValue }?.abbr
+
+                        // Find the selected field ID using either divisi OR estate abbreviation
+                        val selectedFieldId = blokList.find { blok ->
+                            blok.regional == selectedRegionalValue &&
+                                    blok.tahun == selectedTahunTanamValue &&
+                                    blok.kode == selectedBlok &&
+                                    blok.dept == selectedEstateValue &&
+                                    (blok.divisi == selectedDivisiValue || blok.dept_abbr == estateAbbr) // Highlighted OR condition
+                        }?.id
                         selectedBlokValue = selectedFieldId
 
-
-
+                        // Debug logs to track selected values
                         Log.d("testing", selectedRegionalValue.toString())
                         Log.d("testing", selectedEstateValue.toString())
                         Log.d("testing", selectedDivisiValue.toString())
@@ -1116,13 +1113,15 @@ class HomeActivity : AppCompatActivity() {
                                 tphList?.filter { tph ->
                                     tph.regional == selectedRegionalValue &&
                                             tph.dept == selectedEstateValue &&
-                                            tph.divisi == selectedDivisiValue &&
+                                            (tph.divisi == selectedDivisiValue || tph.dept_abbr == estateAbbr) && // Highlighted OR condition
                                             tph.tahun == selectedTahunTanamValue &&
                                             tph.blok == selectedBlokValue
                                 }
                             }
 
+                            // Log the filtered TPH list for debugging
                             Log.d("testing", filteredTPH.toString())
+
                             val mbSave = findViewById<MaterialButton>(R.id.mbSaveDataTPH)
                             if (!filteredTPH.isNullOrEmpty()) {
                                 val tphNumbers = filteredTPH.map { it.nomor }
@@ -1147,10 +1146,12 @@ class HomeActivity : AppCompatActivity() {
                         val detectLatInput = findViewById<TextView>(R.id.detect_lat_input)
                         val detectLonInput = findViewById<TextView>(R.id.detect_lon_input)
 
+                        val estateAbbr = deptList.find { it.id == selectedEstateValue }?.abbr
+
                         val selectedTPHId = tphList!!.find {
                             it.regional == selectedRegionalValue &&
                                     it.dept == selectedEstateValue &&
-                                    it.divisi == selectedDivisiValue &&
+                                    (it.divisi == selectedDivisiValue || it.dept_abbr == estateAbbr)
                                     it.blok == selectedBlokValue &&
                                     it.tahun == selectedTahunTanamValue &&
                                     it.nomor == selectedTPH
@@ -1172,7 +1173,7 @@ class HomeActivity : AppCompatActivity() {
                             selectedTPHLon?.matches(lonPattern) == true) {
                             detectLatInput.text = "Latitude: $selectedTPHLat"
                             detectLonInput.text = "Longitude: $selectedTPHLon"
-                            val selectedTPHUserInput = "exampleInput" // Example input
+                            val selectedTPHUserInput = selectedTPHUserInput.toString() // Example input
                             val formattedInput = selectedTPHUserInput.replaceFirstChar {
                                 if (it.isLowerCase()) it.titlecase() else it.toString()
                             }

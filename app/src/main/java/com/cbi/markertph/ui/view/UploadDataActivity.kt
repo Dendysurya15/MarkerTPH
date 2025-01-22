@@ -179,6 +179,7 @@ class UploadDataActivity : AppCompatActivity() {
                     id = it["id"] as Int,
                     datetime = it["tanggal"] as String,
                     user_input = it["user_input"] as String,
+                    regional = it["regional_id"] as Int,
                     estate = it["estate"] as String,
                     dept = it["id_estate"] as Int,
                     afdeling = it["afdeling"] as String,
@@ -427,8 +428,8 @@ class UploadDataActivity : AppCompatActivity() {
                         val recordMap = mutableMapOf<String, Any>()
                         recordMap[KEY_ID] = safeRecord.id ?: 0
                         recordMap[KEY_TANGGAL] = safeRecord.tanggal ?: ""
-                        recordMap[KEY_REGIONAL] = safeRecord.estate ?: ""
-                        recordMap[KEY_REGIONAL_ID] = safeRecord.wilayah_id ?: ""
+                        recordMap[KEY_REGIONAL] = safeRecord.regional ?: ""
+                        recordMap[KEY_REGIONAL_ID] = safeRecord.regional_id ?: ""
                         recordMap[KEY_WILAYAH] = safeRecord.wilayah ?: ""
                         recordMap[KEY_WILAYAH_ID] = safeRecord.wilayah_id ?: ""
                         recordMap[KEY_ESTATE] = safeRecord.estate ?: ""

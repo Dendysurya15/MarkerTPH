@@ -6,6 +6,7 @@ data class UploadData(
     @SerializedName("id") val id: Int,
     @SerializedName("datetime") val datetime: String,
     @SerializedName("user_input") val user_input: String,
+    @SerializedName("regional") val regional: Int,
     @SerializedName("estate") val estate: String?,
     @SerializedName("dept") val dept: Int,
     @SerializedName("afdeling") val afdeling: String?,
