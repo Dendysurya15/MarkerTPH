@@ -964,7 +964,8 @@ class HomeActivity : AppCompatActivity() {
                         selectedRegionalSpinnerIndex = position
 
                         if (selectedRegionalId != null) {
-                            val filteredWilayahList = wilayahList.filter{it.regional == selectedRegionalId}
+                            val filteredWilayahList = wilayahList.filter{
+                                it.regional == selectedRegionalId}
                             val wilayahNames = filteredWilayahList.map { it.nama }
 
                             Log.d("Testing", wilayahList.toString())
@@ -983,12 +984,17 @@ class HomeActivity : AppCompatActivity() {
                         resetViewsBelow(binding.layoutWilayah)
                         selectedWilayah = item.toString()
 
-                        val selectedWilayahId = wilayahList.find { it.nama == selectedWilayah }?.id
+                        val selectedWilayahId = wilayahList.find {
+                            it.regional == selectedRegionalValue
+                            it.nama == selectedWilayah
+                        }?.id
                         selectedWilayahValue = selectedWilayahId
                         selectedWilayahSpinnerIndex = position
 
                         if (selectedWilayahId != null) {
-                            val filteredDeptList = deptList.filter { it.regional == selectedRegionalValue && it.wilayah == selectedWilayahValue }
+                            val filteredDeptList = deptList.filter {
+                                it.regional == selectedRegionalValue &&
+                                        it.wilayah == selectedWilayahValue }
                             val deptCodeNames = filteredDeptList.map { it.nama }
 
 
@@ -1006,13 +1012,19 @@ class HomeActivity : AppCompatActivity() {
                         selectedEstateValue = null
                         resetViewsBelow(binding.layoutEstate)
                         selectedEstate = item.toString()
-                        val selectedEstateId = deptList.find { it.nama == selectedEstate  && it.regional == selectedRegionalValue && it.wilayah == selectedWilayahValue}?.id
+                        val selectedEstateId = deptList.find {
+                                    it.regional == selectedRegionalValue &&
+                                    it.wilayah == selectedWilayahValue &&
+                                    it.nama == selectedEstate
+                                    }
+                            ?.id
+
                         selectedEstateValue = selectedEstateId
                         selectedEstateSpinnerIndex = position
 
                         if (selectedEstateId != null){
                             val filteredDivisiList = divisiList.filter{it.dept == selectedEstateId}
-                            Log.d("testing", filteredDivisiList.toString())
+
                             val divisiCodeNames = filteredDivisiList.map{it.abbr}
                             if (divisiCodeNames.isNotEmpty()){
                                 setupSpinnerView(binding.layoutAfdeling, divisiCodeNames)
@@ -1028,7 +1040,9 @@ class HomeActivity : AppCompatActivity() {
                     stringXML(R.string.field_afdeling) -> {
                         resetViewsBelow(binding.layoutAfdeling)
                         selectedAfdeling = item.toString()
-                        val selectedDivisiId = divisiList.find { it.abbr == selectedAfdeling && it.dept == selectedEstateValue  }?.id
+                        val selectedDivisiId = divisiList.find {
+                            it.abbr == selectedAfdeling &&
+                                    it.dept == selectedEstateValue  }?.id
                         selectedDivisionSpinnerIndex = position
                         selectedDivisiValue = selectedDivisiId
 
@@ -1042,8 +1056,8 @@ class HomeActivity : AppCompatActivity() {
 
                             val filteredBlokList = blokList.filter {
                                 it.regional == selectedRegionalValue &&
-                                        it.dept == selectedEstateValue &&
-                                        (it.divisi == selectedDivisiId || it.dept_abbr == estateAbbr)
+                                        it.dept == selectedEstateValue  &&
+                                        (it.divisi == selectedDivisiId || it.dept_abbr == estateAbbr )
                             }
 
                             val tahunTanamList = filteredBlokList.map { it.tahun }.distinct().sorted()
@@ -1066,12 +1080,20 @@ class HomeActivity : AppCompatActivity() {
 
                         val estateAbbr = deptList.find { it.id == selectedEstateValue }?.abbr
 
+
                         val filteredBlokCodes = blokList.filter {
                             it.regional == selectedRegionalValue &&
                                     it.dept == selectedEstateValue &&
                                     (it.divisi == selectedDivisiValue || it.dept_abbr == estateAbbr) &&
                                     it.tahun == selectedTahunTanamValue
                         }
+
+                        Log.d("testing", selectedRegionalValue.toString())
+                        Log.d("testing", selectedEstateValue.toString())
+                        Log.d("testing", selectedDivisiValue.toString())
+//                        Log.d("testing", selectedBlok.toString())
+//                        Log.d("testing", selectedBlokValue.toString())
+//                        Log.d("testing", selectedTahunTanamValue.toString())
 
                         if (filteredBlokCodes.isNotEmpty()) {
                             val blokNames = filteredBlokCodes.map { it.kode }
@@ -1093,10 +1115,11 @@ class HomeActivity : AppCompatActivity() {
                         // Find the selected field ID using either divisi OR estate abbreviation
                         val selectedFieldId = blokList.find { blok ->
                             blok.regional == selectedRegionalValue &&
-                                    blok.tahun == selectedTahunTanamValue &&
-                                    blok.kode == selectedBlok &&
                                     blok.dept == selectedEstateValue &&
-                                    (blok.divisi == selectedDivisiValue || blok.dept_abbr == estateAbbr) // Highlighted OR condition
+                                    (blok.divisi == selectedDivisiValue || blok.dept_abbr == estateAbbr)  &&
+                                    blok.tahun == selectedTahunTanamValue &&
+                                    blok.kode == selectedBlok
+
                         }?.id
                         selectedBlokValue = selectedFieldId
 
