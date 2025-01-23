@@ -38,6 +38,7 @@ import androidx.lifecycle.repeatOnLifecycle
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.cbi.markertph.R
+import com.cbi.markertph.data.api.VolleyApiService
 import com.cbi.markertph.data.model.BUnitCodeModel
 import com.cbi.markertph.data.model.BlokModel
 import com.cbi.markertph.data.model.CompanyCodeModel
@@ -49,7 +50,7 @@ import com.cbi.markertph.data.model.RegionalModel
 import com.cbi.markertph.data.model.TPHModel
 import com.cbi.markertph.data.model.TPHNewModel
 import com.cbi.markertph.data.model.WilayahModel
-import com.cbi.markertph.data.network.RetrofitClient
+
 import com.cbi.markertph.data.repository.TPHRepository
 import com.cbi.markertph.databinding.ActivityHomeBinding
 import com.cbi.markertph.databinding.PertanyaanSpinnerLayoutBinding
@@ -231,7 +232,7 @@ class HomeActivity : AppCompatActivity() {
         loadingDialog = LoadingDialog(this)
         initViewModel()
         checkPermissions()
-        setupLayout()
+//        setupLayout()
         setAppVersion()
 
         getDeviceInfo(this)
@@ -249,18 +250,18 @@ class HomeActivity : AppCompatActivity() {
 
         binding.mbSaveDataTPH.setOnClickListener {
 
-            if (currentAccuracy == null || currentAccuracy > 10.0f) {
-                vibrate()
-                AlertDialogUtility.withSingleAction(
-                    this,
-                    stringXML(R.string.al_back),
-                    stringXML(R.string.al_location_not_accurate),
-                    stringXML(R.string.al_location_under_ten_meter),
-                    "warning.json",
-                    R.color.colorRedDark
-                ) {}
-                return@setOnClickListener
-            }
+//            if (currentAccuracy == null || currentAccuracy > 10.0f) {
+//                vibrate()
+//                AlertDialogUtility.withSingleAction(
+//                    this,
+//                    stringXML(R.string.al_back),
+//                    stringXML(R.string.al_location_not_accurate),
+//                    stringXML(R.string.al_location_under_ten_meter),
+//                    "warning.json",
+//                    R.color.colorRedDark
+//                ) {}
+//                return@setOnClickListener
+//            }
 
             if (validateAndShowErrors()) {
                 AlertDialogUtility.withTwoActions(
@@ -1725,79 +1726,27 @@ class HomeActivity : AppCompatActivity() {
 
     private suspend fun downloadFile(
         fileName: String,
-        apiCall: suspend () -> Response<ResponseBody>,
+        endpoint: String,
         downloadsDir: File?,
         fileList: MutableList<String?>
-    ): Pair<Boolean, String> {
-        return try {
-            withContext(Dispatchers.IO) {
-                val response = apiCall()
-                if (response.isSuccessful) {
-                    val responseBody = response.body()
-                    if (responseBody != null) {
-                        val file = File(downloadsDir, fileName)
-                        try {
-                            val success = saveFileToStorage(responseBody, file)
-                            if (success) {
-                                fileList.add(fileName)
-                                Log.d("FileDownload", "$fileName downloaded successfully.")
-                                Pair(true, "Unduh Selesai")
-                            } else {
-                                fileList.add(null)
-                                Pair(false, "Gagal menyimpan file")
-                            }
-                        } catch (e: Exception) {
-                            fileList.add(null)
-                            Log.e("FileDownload", "Error saving file: ${e.message}")
-                            Pair(false, "Unduh Gagal! Gagal menyimpan file")
-                        }
-                    } else {
-                        fileList.add(null)
-                        Log.e("FileDownload", "Response body is null.")
-                        Pair(false, "Response body kosong")
-                    }
-                } else {
-                    fileList.add(null)
-                    val errorMessage = try {
-                        val errorBody = response.errorBody()?.string()
-                        if (!errorBody.isNullOrEmpty()) {
-                            val gson = Gson()
-                            try {
-                                val errorResponse = gson.fromJson(errorBody, ErrorResponse::class.java)
-                                errorResponse.message
-                            } catch (e: Exception) {
-                                "Error code: ${response.code()}"
-                            }
-                        } else {
-                            "Error code: ${response.code()}"
-                        }
-                    } catch (e: Exception) {
-                        Log.e("FileDownload", "Error handling response", e)
-                        "Error code: ${response.code()}"
-                    }
-                    Pair(false, "Unduh Gagal! $errorMessage")
-                }
+    ): Pair<Boolean, String> = withContext(Dispatchers.IO) {
+        try {
+            val response = VolleyApiService.downloadFile(this@HomeActivity, endpoint).await()
+            val file = File(downloadsDir, fileName)
+
+            FileOutputStream(file).use { outputStream ->
+                outputStream.write(response)
             }
+
+            fileList.add(fileName)
+            Pair(true, "Unduh Selesai")
         } catch (e: Exception) {
+            Log.e("FileDownload", "Error: ${e.message}")
             fileList.add(null)
-            Log.e("FileDownload", "Error downloading file: ${e.message}")
             Pair(false, "Unduh Gagal! ${e.message ?: "Unknown error"}")
         }
     }
 
-    private fun saveFileToStorage(body: ResponseBody, file: File): Boolean {
-        return try {
-            body.byteStream().use { inputStream ->
-                FileOutputStream(file).use { outputStream ->
-                    inputStream.copyTo(outputStream)
-                }
-            }
-            true
-        } catch (e: Exception) {
-            Log.e("FileDownload", "Error saving file: ${e.message}")
-            false
-        }
-    }
 
     private suspend fun shouldStartFileDownload(): Boolean {
         val savedFileList = prefManager!!.getFileList()
@@ -1845,14 +1794,29 @@ class HomeActivity : AppCompatActivity() {
         return shouldDownload
     }
 
-    private suspend fun checkServerDates(): Boolean {
+    private suspend fun checkServerDates(): Boolean = withContext(Dispatchers.IO) {
         try {
+            Log.d("ServerDates", "Starting server date check")
             filesToUpdate.clear()
+            Log.d("ServerDates", "Cleared filesToUpdate list")
 
-            val response = RetrofitClient.instance.getTablesLatestModified()
-            if (response.isSuccessful && response.body()?.statusCode == 1) {
-                val serverData = response.body()?.data ?: return true
-                val localData = prefManager?.getAllDateModified() ?: return true
+            val response = VolleyApiService.makeRequest(
+                this@HomeActivity,
+                "getTablesLatestModified"
+            ).await()
+            Log.d("ServerDates", "API Response received: $response")
+
+            if (response.getInt("statusCode") == 1) {
+                val serverData = response.getJSONObject("data")
+                Log.d("ServerDates", "Server data: $serverData")
+
+                val localData = prefManager?.getAllDateModified()
+                Log.d("ServerDates", "Local data: $localData")
+
+                if (localData == null) {
+                    Log.d("ServerDates", "Local data is null, returning true")
+                    return@withContext true
+                }
 
                 val keyMapping = mapOf(
                     AppUtils.ApiCallManager.apiCallList[0].first to Pair("regional", "RegionalDB"),
@@ -1862,39 +1826,44 @@ class HomeActivity : AppCompatActivity() {
                     AppUtils.ApiCallManager.apiCallList[4].first to Pair("blok", "BlokDB"),
                     AppUtils.ApiCallManager.apiCallList[5].first to Pair("tph", "TPHDB")
                 )
+                Log.d("ServerDates", "Key mapping created: $keyMapping")
+
+                val dateFormat = SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.getDefault())
 
                 keyMapping.forEach { (filename, keys) ->
+                    Log.d("ServerDates", "Checking file: $filename")
                     val (serverKey, localKey) = keys
-                    val serverDate = serverData[serverKey]
+                    val serverDate = serverData.optString(serverKey)
                     val localDate = localData[localKey]
 
-                    Log.d("DateComparison", """
-                    Comparing dates for $localKey:
-                    Server date ($serverKey): $serverDate
-                    Local date ($localKey): $localDate
-                """.trimIndent())
+                    Log.d("ServerDates", "Comparing dates for $filename:")
+                    Log.d("ServerDates", "Server date ($serverKey): $serverDate")
+                    Log.d("ServerDates", "Local date ($localKey): $localDate")
 
-                    if (serverDate != null && localDate != null) {
-                        val serverDateTime = SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.getDefault())
-                            .parse(serverDate)
-                        val localDateTime = SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.getDefault())
-                            .parse(localDate)
+                    if (serverDate.isNotEmpty() && localDate != null) {
+                        val serverDateTime = dateFormat.parse(serverDate)
+                        val localDateTime = dateFormat.parse(localDate)
 
-                        if (serverDateTime != null && localDateTime != null) {
-                            if (serverDateTime.after(localDateTime)) {
-                                Log.d("DateComparison", "$localKey needs update: Server date is newer")
-                                filesToUpdate.add(filename)
-                            }
+                        Log.d("ServerDates", "Parsed dates - Server: $serverDateTime, Local: $localDateTime")
+
+                        if (serverDateTime != null && localDateTime != null &&
+                            serverDateTime.after(localDateTime)) {
+                            Log.d("ServerDates", "Update needed for $filename")
+                            filesToUpdate.add(filename)
                         }
                     }
                 }
 
-                return filesToUpdate.isNotEmpty()
+                Log.d("ServerDates", "Final filesToUpdate list: $filesToUpdate")
+                return@withContext filesToUpdate.isNotEmpty()
             }
-            return true
+
+            Log.d("ServerDates", "Status code not 1, returning true")
+            return@withContext true
         } catch (e: Exception) {
-            Log.e("FileCheck", "Error checking server dates", e)
-            return true
+            Log.e("ServerDates", "Error checking server dates", e)
+            Log.e("ServerDates", "Stack trace: ${e.stackTrace}")
+            return@withContext true
         }
     }
 
