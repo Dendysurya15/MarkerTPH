@@ -9,7 +9,7 @@ android {
 
     def versionMajor = 2
     def versionMinor = 7
-    def versionPatch = 1
+    def versionPatch = 2
 
 
     defaultConfig {
