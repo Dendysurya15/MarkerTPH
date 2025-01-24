@@ -14,6 +14,7 @@ import androidx.core.database.getIntOrNull
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import com.cbi.markertph.R
+import com.cbi.markertph.data.api.VolleyApiService
 import com.cbi.markertph.data.database.DatabaseHelper
 import com.cbi.markertph.data.database.DatabaseHelper.Companion.DB_ARCHIVE
 import com.cbi.markertph.data.database.DatabaseHelper.Companion.DB_TABLE_KOORDINAT_TPH
@@ -48,10 +49,14 @@ import com.cbi.markertph.data.model.KoordinatTPHModel
 import com.cbi.markertph.data.model.TPHModel
 import com.cbi.markertph.data.model.UploadData
 import com.cbi.markertph.data.model.UploadResponse
-import com.cbi.markertph.data.network.RetrofitClient
+//import com.cbi.markertph.data.network.RetrofitClient
 import com.cbi.markertph.utils.AlertDialogUtility
 import com.cbi.markertph.utils.AppUtils.stringXML
 import com.google.gson.Gson
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import org.json.JSONArray
 import org.json.JSONObject
 import retrofit2.Call
 import retrofit2.Callback
@@ -542,7 +547,7 @@ class TPHRepository(context: Context) {
         return success
     }
 
-    private val apiService = RetrofitClient.instance
+//    private val apiService = RetrofitClient.instance
 
     companion object {
         const val RETRY_DELAY_MS = 6000L // Retry delay of 6 seconds
@@ -550,203 +555,285 @@ class TPHRepository(context: Context) {
         private const val TAG = "UploadRepository" // Tag for logging
     }
 
-    // Repository function
     fun uploadDataServer(context: Context, dataList: List<UploadData>): LiveData<Result<UploadResponse>> {
         val result = MutableLiveData<Result<UploadResponse>>()
 
-        try {
-            Log.d(TAG, "Starting upload process for ${dataList.size} items")
-
-            // Convert data list to JSON string
-            val gson = Gson()
-            val jsonString = try {
-                gson.toJson(dataList)
-            } catch (e: Exception) {
-                Log.e(TAG, "Failed to convert data to JSON: ${e.message}", e)
-                handleFailure(context, result, "Error converting data to JSON: ${e.message}")
-                return result
-            }
-
-            Log.d(TAG, "Successfully converted data to JSON")
-
-            // Compress using GZIP
-            val byteStream = ByteArrayOutputStream()
+        CoroutineScope(Dispatchers.Main).launch {
             try {
-                GZIPOutputStream(byteStream).use { gzipStream ->
-                    gzipStream.write(jsonString.toByteArray(Charsets.UTF_8))
+                val response = VolleyApiService.uploadData(context, dataList).await()
+
+                when (response.getInt("statusCode")) {
+                    2 -> handleDuplicateResponse(context, dataList, response, result)
+                    1 -> handleSuccessResponse(context, dataList, response, result)
+                    else -> handleFailure(context, result, response.getString("message"))
                 }
+
             } catch (e: Exception) {
-                Log.e(TAG, "Failed to compress data: ${e.message}", e)
-                handleFailure(context, result, "Error compressing data: ${e.message}")
-                return result
+                handleFailure(context, result, "Error: ${e.message}")
             }
-
-            Log.d(TAG, "Successfully compressed data")
-
-            // Convert to Base64
-            val base64Data = try {
-                Base64.encodeToString(byteStream.toByteArray(), Base64.NO_WRAP)
-            } catch (e: Exception) {
-                Log.e(TAG, "Failed to encode data to Base64: ${e.message}", e)
-                handleFailure(context, result, "Error encoding data: ${e.message}")
-                return result
-            }
-
-            Log.d(TAG, "Successfully encoded data to Base64")
-
-            // Create request
-            val request = BatchUploadRequest(base64Data)
-
-            // Make API call
-            val call = apiService.uploadData(request)
-            Log.d(TAG, "Initiating API call")
-
-            call.enqueue(object : Callback<UploadResponse> {
-                override fun onResponse(call: Call<UploadResponse>, response: Response<UploadResponse>) {
-                    Log.d(TAG, "Received API response. Status code: ${response.code()}")
-
-                    if (response.isSuccessful && response.body() != null) {
-                        val uploadResponse = response.body()!!
-                        Log.d(TAG, "Response successful. Success flag: ${uploadResponse.statusCode}")
-
-                        if (response.isSuccessful && response.body() != null) {
-                            val uploadResponse = response.body()!!
-                            Log.d(TAG, "Response successful. Status code: ${uploadResponse.statusCode}")
-
-                            when (uploadResponse.statusCode) {
-                                2 -> {
-                                    Log.d(TAG, "All records are duplicates")
-
-                                    AlertDialogUtility.withSingleAction(
-                                        context,
-                                        context.stringXML(R.string.al_back),
-                                        context.stringXML(R.string.al_data_duplicate),
-                                        "${dataList.size} ${context.stringXML(R.string.al_data_duplicate_description)}",
-                                        "warning.json",
-                                        R.color.orange
-                                    ) {
-                                    }
-                                    Toast.makeText(context, "${dataList.size} ${context.stringXML(R.string.al_data_duplicate_description)}", Toast.LENGTH_LONG).show()
-                                    result.postValue(Result.success(uploadResponse))
-                                }
-                                1 -> {
-                                    try {
-                                        val responseData = uploadResponse.data as? Map<*, *>
-                                        val storedData = responseData?.get("stored") as? List<*>
-                                        val duplicateCount = dataList.size - (storedData?.size ?: 0)
-
-                                        Log.d("testing", storedData.toString())
-                                        var successfulUpdates = 0
-                                        dataList.forEach { data ->
-                                            val wasStored = storedData?.any { stored ->
-                                                (stored as? Map<*, *>)?.let { map ->
-
-                                                   val regComparison = map["regional"].toString() == data.regional.toString()
-                                                    val deptComparison = map["dept"].toString() == data.dept.toString()
-                                                    val nomorComparison = map["nomor"].toString() == data.nomor.toString()
-                                                    val id_tphComparison = map["id"]?.toString()?.toDoubleOrNull()?.toInt() == data.id_tph!!.toInt()
-                                                    val user_inputComparison = map["user_input"].toString() == data.user_input.toString()
-                                                    val latComparison = map["lat"].toString() == data.lat.toString()
-                                                    val lonComparison = map["lon"].toString() == data.lon.toString()
-
-//                                                    // Log the individual comparisons for clarity
-//                                                    Log.d("testing", "Comparing regional: ${map["regional"]} with ${data.regional} -> $regComparison")
-//                                                    Log.d("testing", "Comparing dept: ${map["dept"]} with ${data.dept} -> $deptComparison")
-//                                                    Log.d("testing", "Comparing nomor: ${map["nomor"]} with ${data.nomor} -> $nomorComparison")
-//                                                    Log.d("testing", "Comparing id_tph: ${map["id"]} with ${data.id_tph} -> $id_tphComparison")
-//                                                    Log.d("testing", "Comparing user_input: ${map["user_input"]} with ${data.user_input} -> $user_inputComparison")
-//                                                    Log.d("testing", "Comparing lat: ${map["lat"]} with ${data.lat} -> $latComparison")
-//                                                    Log.d("testing", "Comparing lon: ${map["lon"]} with ${data.lon} -> $lonComparison")
-//                                                    // Log the full map and data being compared
-//                                                    Log.d("DetailedMap", "Map: $map")
-//                                                    Log.d("DetailedData", "Data: $data")
-
-                                                    id_tphComparison &&  regComparison && deptComparison  && nomorComparison && user_inputComparison && latComparison && lonComparison
-                                                } ?: false
-                                            } ?: false
-
-                                            Log.d("testing", "Final comparison result: $wasStored")
-                                            Log.d("testing", "For ID: ${data.id}")
-                                            if (wasStored) {
-                                                updateArchiveStatus(data.id, 1)
-                                                successfulUpdates++
-                                                Log.d(TAG, "Updated archive status for ID: ${data.id}")
-                                            } else {
-                                                Log.d(TAG, "Skipped archive status update for ID: ${data.id}")
-                                            }
-                                        }
-
-                                        // Show appropriate message based on what happened
-//                                        if (duplicateCount > 0) {
-//                                            // If there are both new and duplicate records, show a dialog that requires acknowledgment
-//                                            AlertDialogUtility.withSingleAction(
-//                                                context,
-//                                                context.stringXML(R.string.al_back),
-//                                                context.stringXML(R.string.al_success_upload),
-//                                                "${context.stringXML(R.string.al_success_upload_description)} ${successfulUpdates} data\n" +
-//                                                        "${duplicateCount} ${context.stringXML(R.string.al_data_duplicate_description)}",
-//                                                "success.json",
-//                                                R.color.orange
-//                                            ) {
-//
-//                                            }
-//                                        } else {
-                                            // If all records are new and successful, show auto-dismissing success dialog
-                                            AlertDialogUtility.alertDialogAction(
-                                                context,
-                                                context.stringXML(R.string.al_success_upload),
-                                                "${context.stringXML(R.string.al_success_upload_description)} ${successfulUpdates} data!",
-                                                "success.json"
-                                            ) {
-                                                Log.d(TAG, "Success dialog auto-dismissed")
-                                            }
-//                                        }
-
-                                        result.postValue(Result.success(uploadResponse))
-                                    } catch (e: Exception) {
-                                        Log.e(TAG, "Error updating archive status: ${e.message}", e)
-                                        result.postValue(Result.failure(e))
-                                    }
-                                }
-                                else -> {  // Failed (0 or any other value)
-                                    Log.e(TAG, "Upload failed with message: ${uploadResponse.message}")
-                                    handleFailure(context, result, uploadResponse.message)
-                                }
-                            }
-                        } else {
-                            Log.e(TAG, "Upload failed with message: ${uploadResponse.message}")
-                            handleFailure(context, result, uploadResponse.message)
-                        }
-                    } else {
-                        try {
-                            val errorJson = response.errorBody()?.string()
-                            Log.e(TAG, "Error response body: $errorJson")
-
-                            val errorObj = JSONObject(errorJson!!)
-                            val errorMessage = errorObj.getString("message")
-                            Log.e(TAG, "Parsed error message: $errorMessage")
-
-                            handleFailure(context, result, errorMessage)
-                        } catch (e: Exception) {
-                            Log.e(TAG, "Failed to parse error response: ${e.message}", e)
-                            handleFailure(context, result, "Error uploading data: Unknown error")
-                        }
-                    }
-                }
-
-                override fun onFailure(call: Call<UploadResponse>, t: Throwable) {
-                    Log.e(TAG, "Network call failed", t)
-                    handleFailure(context, result, "Network failure: ${t.message}")
-                }
-            })
-
-        } catch (e: Exception) {
-            Log.e(TAG, "Unexpected error during upload process", e)
-            handleFailure(context, result, "Error preparing data: ${e.message}")
         }
 
         return result
     }
+
+    private fun handleSuccessResponse(context: Context, dataList: List<UploadData>, response: JSONObject, result: MutableLiveData<Result<UploadResponse>>) {
+        val storedData = response.getJSONObject("data").getJSONArray("stored")
+        var successfulUpdates = 0
+
+        dataList.forEach { data ->
+            if (wasDataStored(data, storedData)) {
+                updateArchiveStatus(data.id, 1)
+                successfulUpdates++
+            }
+        }
+
+        AlertDialogUtility.alertDialogAction(
+            context,
+            context.stringXML(R.string.al_success_upload),
+            "${context.stringXML(R.string.al_success_upload_description)} ${successfulUpdates} data!",
+            "success.json"
+        ) {}
+
+        result.postValue(Result.success(parseResponse(response)))
+    }
+
+    private fun handleDuplicateResponse(context: Context, dataList: List<UploadData>, response: JSONObject, result: MutableLiveData<Result<UploadResponse>>) {
+        AlertDialogUtility.withSingleAction(
+            context,
+            context.stringXML(R.string.al_back),
+            context.stringXML(R.string.al_data_duplicate),
+            "${dataList.size} ${context.stringXML(R.string.al_data_duplicate_description)}",
+            "warning.json",
+            R.color.orange
+        ) {}
+
+        result.postValue(Result.success(parseResponse(response)))
+    }
+
+    private fun wasDataStored(data: UploadData, storedData: JSONArray): Boolean {
+        for (i in 0 until storedData.length()) {
+            val stored = storedData.getJSONObject(i)
+            val id_tphComparison = stored.getString("id").toDoubleOrNull()?.toInt() == data.id_tph!!.toInt()
+            val regComparison = stored.getString("regional").toString() == data.regional.toString()
+            val deptComparison = stored.getString("dept").toString() == data.dept.toString()
+            val nomorComparison = stored.getString("nomor").toString() == data.nomor.toString()
+            val user_inputComparison = stored.getString("user_input").toString() == data.user_input.toString()
+            val latComparison = stored.getString("lat").toString() == data.lat.toString()
+            val lonComparison = stored.getString("lon").toString() == data.lon.toString()
+
+            if (id_tphComparison && regComparison && deptComparison && nomorComparison &&
+                user_inputComparison && latComparison && lonComparison) {
+                return true
+            }
+        }
+        return false
+    }
+
+    private fun parseResponse(response: JSONObject): UploadResponse {
+        return UploadResponse(
+            statusCode = response.getInt("statusCode"),
+            message = response.getString("message"),
+            data = response.optJSONObject("data")?.toString()
+        )
+    }
+
+    // Repository function
+//    fun uploadDataServer(context: Context, dataList: List<UploadData>): LiveData<Result<UploadResponse>> {
+//        val result = MutableLiveData<Result<UploadResponse>>()
+//
+//        try {
+//            Log.d(TAG, "Starting upload process for ${dataList.size} items")
+//
+//            // Convert data list to JSON string
+//            val gson = Gson()
+//            val jsonString = try {
+//                gson.toJson(dataList)
+//            } catch (e: Exception) {
+//                Log.e(TAG, "Failed to convert data to JSON: ${e.message}", e)
+//                handleFailure(context, result, "Error converting data to JSON: ${e.message}")
+//                return result
+//            }
+//
+//            Log.d(TAG, "Successfully converted data to JSON")
+//
+//            // Compress using GZIP
+//            val byteStream = ByteArrayOutputStream()
+//            try {
+//                GZIPOutputStream(byteStream).use { gzipStream ->
+//                    gzipStream.write(jsonString.toByteArray(Charsets.UTF_8))
+//                }
+//            } catch (e: Exception) {
+//                Log.e(TAG, "Failed to compress data: ${e.message}", e)
+//                handleFailure(context, result, "Error compressing data: ${e.message}")
+//                return result
+//            }
+//
+//            Log.d(TAG, "Successfully compressed data")
+//
+//            // Convert to Base64
+//            val base64Data = try {
+//                Base64.encodeToString(byteStream.toByteArray(), Base64.NO_WRAP)
+//            } catch (e: Exception) {
+//                Log.e(TAG, "Failed to encode data to Base64: ${e.message}", e)
+//                handleFailure(context, result, "Error encoding data: ${e.message}")
+//                return result
+//            }
+//
+//            Log.d(TAG, "Successfully encoded data to Base64")
+//
+//            // Create request
+//            val request = BatchUploadRequest(base64Data)
+//
+//            // Make API call
+//            val call = apiService.uploadData(request)
+//            Log.d(TAG, "Initiating API call")
+//
+//            call.enqueue(object : Callback<UploadResponse> {
+//                override fun onResponse(call: Call<UploadResponse>, response: Response<UploadResponse>) {
+//                    Log.d(TAG, "Received API response. Status code: ${response.code()}")
+//
+//                    if (response.isSuccessful && response.body() != null) {
+//                        val uploadResponse = response.body()!!
+//                        Log.d(TAG, "Response successful. Success flag: ${uploadResponse.statusCode}")
+//
+//                        if (response.isSuccessful && response.body() != null) {
+//                            val uploadResponse = response.body()!!
+//                            Log.d(TAG, "Response successful. Status code: ${uploadResponse.statusCode}")
+//
+//                            when (uploadResponse.statusCode) {
+//                                2 -> {
+//                                    Log.d(TAG, "All records are duplicates")
+//
+//                                    AlertDialogUtility.withSingleAction(
+//                                        context,
+//                                        context.stringXML(R.string.al_back),
+//                                        context.stringXML(R.string.al_data_duplicate),
+//                                        "${dataList.size} ${context.stringXML(R.string.al_data_duplicate_description)}",
+//                                        "warning.json",
+//                                        R.color.orange
+//                                    ) {
+//                                    }
+//                                    Toast.makeText(context, "${dataList.size} ${context.stringXML(R.string.al_data_duplicate_description)}", Toast.LENGTH_LONG).show()
+//                                    result.postValue(Result.success(uploadResponse))
+//                                }
+//                                1 -> {
+//                                    try {
+//                                        val responseData = uploadResponse.data as? Map<*, *>
+//                                        val storedData = responseData?.get("stored") as? List<*>
+//                                        val duplicateCount = dataList.size - (storedData?.size ?: 0)
+//
+//                                        Log.d("testing", storedData.toString())
+//                                        var successfulUpdates = 0
+//                                        dataList.forEach { data ->
+//                                            val wasStored = storedData?.any { stored ->
+//                                                (stored as? Map<*, *>)?.let { map ->
+//
+//                                                   val regComparison = map["regional"].toString() == data.regional.toString()
+//                                                    val deptComparison = map["dept"].toString() == data.dept.toString()
+//                                                    val nomorComparison = map["nomor"].toString() == data.nomor.toString()
+//                                                    val id_tphComparison = map["id"]?.toString()?.toDoubleOrNull()?.toInt() == data.id_tph!!.toInt()
+//                                                    val user_inputComparison = map["user_input"].toString() == data.user_input.toString()
+//                                                    val latComparison = map["lat"].toString() == data.lat.toString()
+//                                                    val lonComparison = map["lon"].toString() == data.lon.toString()
+//
+////                                                    // Log the individual comparisons for clarity
+////                                                    Log.d("testing", "Comparing regional: ${map["regional"]} with ${data.regional} -> $regComparison")
+////                                                    Log.d("testing", "Comparing dept: ${map["dept"]} with ${data.dept} -> $deptComparison")
+////                                                    Log.d("testing", "Comparing nomor: ${map["nomor"]} with ${data.nomor} -> $nomorComparison")
+////                                                    Log.d("testing", "Comparing id_tph: ${map["id"]} with ${data.id_tph} -> $id_tphComparison")
+////                                                    Log.d("testing", "Comparing user_input: ${map["user_input"]} with ${data.user_input} -> $user_inputComparison")
+////                                                    Log.d("testing", "Comparing lat: ${map["lat"]} with ${data.lat} -> $latComparison")
+////                                                    Log.d("testing", "Comparing lon: ${map["lon"]} with ${data.lon} -> $lonComparison")
+////                                                    // Log the full map and data being compared
+////                                                    Log.d("DetailedMap", "Map: $map")
+////                                                    Log.d("DetailedData", "Data: $data")
+//
+//                                                    id_tphComparison &&  regComparison && deptComparison  && nomorComparison && user_inputComparison && latComparison && lonComparison
+//                                                } ?: false
+//                                            } ?: false
+//
+//                                            Log.d("testing", "Final comparison result: $wasStored")
+//                                            Log.d("testing", "For ID: ${data.id}")
+//                                            if (wasStored) {
+//                                                updateArchiveStatus(data.id, 1)
+//                                                successfulUpdates++
+//                                                Log.d(TAG, "Updated archive status for ID: ${data.id}")
+//                                            } else {
+//                                                Log.d(TAG, "Skipped archive status update for ID: ${data.id}")
+//                                            }
+//                                        }
+//
+//                                        // Show appropriate message based on what happened
+////                                        if (duplicateCount > 0) {
+////                                            // If there are both new and duplicate records, show a dialog that requires acknowledgment
+////                                            AlertDialogUtility.withSingleAction(
+////                                                context,
+////                                                context.stringXML(R.string.al_back),
+////                                                context.stringXML(R.string.al_success_upload),
+////                                                "${context.stringXML(R.string.al_success_upload_description)} ${successfulUpdates} data\n" +
+////                                                        "${duplicateCount} ${context.stringXML(R.string.al_data_duplicate_description)}",
+////                                                "success.json",
+////                                                R.color.orange
+////                                            ) {
+////
+////                                            }
+////                                        } else {
+//                                            // If all records are new and successful, show auto-dismissing success dialog
+//                                            AlertDialogUtility.alertDialogAction(
+//                                                context,
+//                                                context.stringXML(R.string.al_success_upload),
+//                                                "${context.stringXML(R.string.al_success_upload_description)} ${successfulUpdates} data!",
+//                                                "success.json"
+//                                            ) {
+//                                                Log.d(TAG, "Success dialog auto-dismissed")
+//                                            }
+////                                        }
+//
+//                                        result.postValue(Result.success(uploadResponse))
+//                                    } catch (e: Exception) {
+//                                        Log.e(TAG, "Error updating archive status: ${e.message}", e)
+//                                        result.postValue(Result.failure(e))
+//                                    }
+//                                }
+//                                else -> {  // Failed (0 or any other value)
+//                                    Log.e(TAG, "Upload failed with message: ${uploadResponse.message}")
+//                                    handleFailure(context, result, uploadResponse.message)
+//                                }
+//                            }
+//                        } else {
+//                            Log.e(TAG, "Upload failed with message: ${uploadResponse.message}")
+//                            handleFailure(context, result, uploadResponse.message)
+//                        }
+//                    } else {
+//                        try {
+//                            val errorJson = response.errorBody()?.string()
+//                            Log.e(TAG, "Error response body: $errorJson")
+//
+//                            val errorObj = JSONObject(errorJson!!)
+//                            val errorMessage = errorObj.getString("message")
+//                            Log.e(TAG, "Parsed error message: $errorMessage")
+//
+//                            handleFailure(context, result, errorMessage)
+//                        } catch (e: Exception) {
+//                            Log.e(TAG, "Failed to parse error response: ${e.message}", e)
+//                            handleFailure(context, result, "Error uploading data: Unknown error")
+//                        }
+//                    }
+//                }
+//
+//                override fun onFailure(call: Call<UploadResponse>, t: Throwable) {
+//                    Log.e(TAG, "Network call failed", t)
+//                    handleFailure(context, result, "Network failure: ${t.message}")
+//                }
+//            })
+//
+//        } catch (e: Exception) {
+//            Log.e(TAG, "Unexpected error during upload process", e)
+//            handleFailure(context, result, "Error preparing data: ${e.message}")
+//        }
+//
+//        return result
+//    }
 
     private fun handleFailure(context: Context, result: MutableLiveData<Result<UploadResponse>>, errorMessage: String) {
         Log.e(TAG, "Handling failure: $errorMessage")

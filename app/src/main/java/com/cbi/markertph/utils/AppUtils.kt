@@ -15,7 +15,6 @@ import androidx.annotation.RequiresApi
 import androidx.core.app.ActivityCompat
 import androidx.fragment.app.Fragment
 import com.cbi.markertph.R
-import com.cbi.markertph.data.network.RetrofitClient
 import com.karumi.dexter.Dexter
 import com.karumi.dexter.MultiplePermissionsReport
 import com.karumi.dexter.PermissionToken
@@ -34,14 +33,13 @@ object AppUtils {
 
 
     object ApiCallManager {
-//        noted : field ditengah merupakan nama db yg ada di server, harus sama !
         val apiCallList = listOf(
-            Pair("datasetRegional.zip", RetrofitClient.instance::downloadDatasetRegionalJson),
-            Pair("datasetWilayah.zip", RetrofitClient.instance::downloadDatasetWilayahJson),
-            Pair("datasetDept.zip", RetrofitClient.instance::downloadDatasetDeptJson),
-            Pair("datasetDivisi.zip", RetrofitClient.instance::downloadDatasetDivisiJson),
-            Pair("datasetBlok.zip", RetrofitClient.instance::downloadDatasetBlokJson),
-            Pair("datasetTPH.zip", RetrofitClient.instance::downloadDatasetTPHNewJson),
+            Pair("datasetRegional.zip", "downloadDatasetRegionalJson"),
+            Pair("datasetWilayah.zip", "downloadDatasetWilayahJson"),
+            Pair("datasetDept.zip", "downloadDatasetDeptJson"),
+            Pair("datasetDivisi.zip", "downloadDatasetDivisiJson"),
+            Pair("datasetBlok.zip", "downloadDatasetBlokJson"),
+            Pair("datasetTPH.zip", "downloadDatasetTPHNewJson")
         )
     }
     /**
