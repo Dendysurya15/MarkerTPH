@@ -1050,115 +1050,222 @@ class HomeActivity : AppCompatActivity() {
                         Log.d("testing", selectedEstateValue.toString())
                         Log.d("testing", selectedDivisiValue.toString())
 
-                        if (selectedDivisiId != null){
+                        if (selectedDivisiId != null) {
+                            if (selectedRegionalValue == 3) {
+                                // Hanya memfilter berdasarkan estateAbbr
+                                val estateAbbr = deptList.find { it.id == selectedEstateValue }?.abbr
+                                val filteredBlokList = blokList.filter {
+                                    it.regional == selectedRegionalValue &&
+                                            it.dept == selectedEstateValue &&
+                                            it.dept_abbr == estateAbbr
+                                }
 
-                            val estateAbbr = deptList.find { it.id == selectedEstateValue }?.abbr
+                                val tahunTanamList = filteredBlokList.map { it.tahun }.distinct().sorted()
 
-                            val filteredBlokList = blokList.filter {
-                                it.regional == selectedRegionalValue &&
-                                        it.dept == selectedEstateValue  &&
-                                        (it.divisi == selectedDivisiId || it.dept_abbr == estateAbbr )
-                            }
-
-                            val tahunTanamList = filteredBlokList.map { it.tahun }.distinct().sorted()
-
-                            if (tahunTanamList.isNotEmpty()) {
-                                setupSpinnerView(binding.layoutTahunTanam, tahunTanamList)
-                                binding.layoutTahunTanam.root.visibility = View.VISIBLE
+                                if (tahunTanamList.isNotEmpty()) {
+                                    setupSpinnerView(binding.layoutTahunTanam, tahunTanamList)
+                                    binding.layoutTahunTanam.root.visibility = View.VISIBLE
+                                } else {
+                                    binding.layoutTahunTanam.root.visibility = View.GONE
+                                }
                             } else {
-                                binding.layoutTahunTanam.root.visibility = View.GONE
+                                // Memfilter berdasarkan divisi saja
+                                val filteredBlokList = blokList.filter {
+                                    it.regional == selectedRegionalValue &&
+                                            it.dept == selectedEstateValue &&
+                                            it.divisi == selectedDivisiId
+                                }
+
+                                val tahunTanamList = filteredBlokList.map { it.tahun }.distinct().sorted()
+
+                                if (tahunTanamList.isNotEmpty()) {
+                                    setupSpinnerView(binding.layoutTahunTanam, tahunTanamList)
+                                    binding.layoutTahunTanam.root.visibility = View.VISIBLE
+                                } else {
+                                    binding.layoutTahunTanam.root.visibility = View.GONE
+                                }
                             }
-                        }else{
+                        } else {
                             binding.layoutBlok.root.visibility = View.GONE
                         }
 
                     }
+
                     stringXML(R.string.field_tahun_tanam) -> {
                         val selectedTahunTanam = item.toString()
                         resetViewsBelow(binding.layoutTahunTanam)
                         selectedTahunTanamValue = selectedTahunTanam
 
-                        val estateAbbr = deptList.find { it.id == selectedEstateValue }?.abbr
+                        if (selectedRegionalValue == 3) {
+                            // Filter berdasarkan estateAbbr saja
+                            val estateAbbr = deptList.find { it.id == selectedEstateValue }?.abbr
+                            val filteredBlokCodes = blokList.filter {
+                                it.regional == selectedRegionalValue &&
+                                        it.dept == selectedEstateValue &&
+                                        it.dept_abbr == estateAbbr &&
+                                        it.tahun == selectedTahunTanamValue
+                            }
 
-
-                        val filteredBlokCodes = blokList.filter {
-                            it.regional == selectedRegionalValue &&
-                                    it.dept == selectedEstateValue &&
-                                    (it.divisi == selectedDivisiValue || it.dept_abbr == estateAbbr) &&
-                                    it.tahun == selectedTahunTanamValue
-                        }
-
-                        Log.d("testing", selectedRegionalValue.toString())
-                        Log.d("testing", selectedEstateValue.toString())
-                        Log.d("testing", selectedDivisiValue.toString())
-//                        Log.d("testing", selectedBlok.toString())
-//                        Log.d("testing", selectedBlokValue.toString())
-//                        Log.d("testing", selectedTahunTanamValue.toString())
-
-                        if (filteredBlokCodes.isNotEmpty()) {
-                            val blokNames = filteredBlokCodes.map { it.kode }
-                            setupSpinnerView(binding.layoutBlok, blokNames)
-                            binding.layoutBlok.root.visibility = View.VISIBLE
+                            if (filteredBlokCodes.isNotEmpty()) {
+                                val blokNames = filteredBlokCodes.map { it.kode }
+                                setupSpinnerView(binding.layoutBlok, blokNames)
+                                binding.layoutBlok.root.visibility = View.VISIBLE
+                            } else {
+                                binding.layoutBlok.root.visibility = View.GONE
+                            }
                         } else {
-                            binding.layoutBlok.root.visibility = View.GONE
+                            // Filter berdasarkan divisi saja
+                            val filteredBlokCodes = blokList.filter {
+                                it.regional == selectedRegionalValue &&
+                                        it.dept == selectedEstateValue &&
+                                        it.divisi == selectedDivisiValue &&
+                                        it.tahun == selectedTahunTanamValue
+                            }
+
+                            if (filteredBlokCodes.isNotEmpty()) {
+                                val blokNames = filteredBlokCodes.map { it.kode }
+                                setupSpinnerView(binding.layoutBlok, blokNames)
+                                binding.layoutBlok.root.visibility = View.VISIBLE
+                            } else {
+                                binding.layoutBlok.root.visibility = View.GONE
+                            }
                         }
                     }
+
                     stringXML(R.string.field_blok) -> {
                         resetViewsBelow(binding.layoutBlok)
                         binding.layoutAncak.root.visibility = View.VISIBLE
                         selectedBlok = item.toString()
                         selectedFieldCodeSpinnerIndex = position
 
-                        // Fetch the estate abbreviation for fallback filtering
-                        val estateAbbr = deptList.find { it.id == selectedEstateValue }?.abbr
+                        if (selectedRegionalValue == 3) {
+                            val estateAbbr = deptList.find { it.id == selectedEstateValue }?.abbr
 
-                        // Find the selected field ID using either divisi OR estate abbreviation
-                        val selectedFieldId = blokList.find { blok ->
-                            blok.regional == selectedRegionalValue &&
-                                    blok.dept == selectedEstateValue &&
-                                    (blok.divisi == selectedDivisiValue || blok.dept_abbr == estateAbbr)  &&
-                                    blok.tahun == selectedTahunTanamValue &&
-                                    blok.kode == selectedBlok
+                            val selectedFieldId = blokList.find { blok ->
+                                blok.regional == selectedRegionalValue &&
+                                        blok.dept == selectedEstateValue &&
+                                        blok.dept_abbr == estateAbbr &&
+                                        blok.tahun == selectedTahunTanamValue &&
+                                        blok.kode == selectedBlok
+                            }?.id
+                            selectedBlokValue = selectedFieldId
 
-                        }?.id
-                        selectedBlokValue = selectedFieldId
+                            lifecycleScope.launch {
+                                val filteredTPH = withContext(Dispatchers.Default) {
+                                    tphList?.filter { tph ->
+                                        tph.regional == selectedRegionalValue &&
+                                                tph.dept == selectedEstateValue &&
+                                                tph.dept_abbr == estateAbbr &&
+                                                tph.tahun == selectedTahunTanamValue &&
+                                                tph.blok == selectedBlokValue
+                                    }
+                                }
 
-                        // Debug logs to track selected values
-                        Log.d("testing", selectedRegionalValue.toString())
-                        Log.d("testing", selectedEstateValue.toString())
-                        Log.d("testing", selectedDivisiValue.toString())
-                        Log.d("testing", selectedBlok.toString())
-                        Log.d("testing", selectedBlokValue.toString())
-                        Log.d("testing", selectedTahunTanamValue.toString())
-
-                        lifecycleScope.launch {
-                            val filteredTPH = withContext(Dispatchers.Default) {
-                                tphList?.filter { tph ->
-                                    tph.regional == selectedRegionalValue &&
-                                            tph.dept == selectedEstateValue &&
-                                            (tph.divisi == selectedDivisiValue || tph.dept_abbr == estateAbbr) && // Highlighted OR condition
-                                            tph.tahun == selectedTahunTanamValue &&
-                                            tph.blok == selectedBlokValue
+                                // Menangani hasil filteredTPH
+                                val mbSave = findViewById<MaterialButton>(R.id.mbSaveDataTPH)
+                                if (!filteredTPH.isNullOrEmpty()) {
+                                    val tphNumbers = filteredTPH.map { it.nomor }
+                                    setupSpinnerView(binding.layoutTPH, tphNumbers)
+                                    binding.layoutTPH.root.visibility = View.VISIBLE
+                                    mbSave.visibility = View.VISIBLE
+                                } else {
+                                    findViewById<LinearLayout>(R.id.layoutTPH).visibility = View.VISIBLE
+                                    mbSave.visibility = View.GONE
                                 }
                             }
+                        } else {
+                            val selectedFieldId = blokList.find { blok ->
+                                blok.regional == selectedRegionalValue &&
+                                        blok.dept == selectedEstateValue &&
+                                        blok.divisi == selectedDivisiValue &&
+                                        blok.tahun == selectedTahunTanamValue &&
+                                        blok.kode == selectedBlok
+                            }?.id
+                            selectedBlokValue = selectedFieldId
 
-                            // Log the filtered TPH list for debugging
-                            Log.d("testing", filteredTPH.toString())
+                            lifecycleScope.launch {
+                                val filteredTPH = withContext(Dispatchers.Default) {
+                                    tphList?.filter { tph ->
+                                        tph.regional == selectedRegionalValue &&
+                                                tph.dept == selectedEstateValue &&
+                                                tph.divisi == selectedDivisiValue &&
+                                                tph.tahun == selectedTahunTanamValue &&
+                                                tph.blok == selectedBlokValue
+                                    }
+                                }
 
-                            val mbSave = findViewById<MaterialButton>(R.id.mbSaveDataTPH)
-                            if (!filteredTPH.isNullOrEmpty()) {
-                                val tphNumbers = filteredTPH.map { it.nomor }
-                                setupSpinnerView(binding.layoutTPH, tphNumbers)
-                                binding.layoutTPH.root.visibility = View.VISIBLE
-                                mbSave.visibility = View.VISIBLE
-                            } else {
-                                findViewById<LinearLayout>(R.id.layoutTPH).visibility = View.VISIBLE
-                                mbSave.visibility = View.GONE
+                                // Menangani hasil filteredTPH
+                                val mbSave = findViewById<MaterialButton>(R.id.mbSaveDataTPH)
+                                if (!filteredTPH.isNullOrEmpty()) {
+                                    val tphNumbers = filteredTPH.map { it.nomor }
+                                    setupSpinnerView(binding.layoutTPH, tphNumbers)
+                                    binding.layoutTPH.root.visibility = View.VISIBLE
+                                    mbSave.visibility = View.VISIBLE
+                                } else {
+                                    findViewById<LinearLayout>(R.id.layoutTPH).visibility = View.VISIBLE
+                                    mbSave.visibility = View.GONE
+                                }
                             }
                         }
                     }
 
-                    stringXML(R.string.field_tph)->{
+
+//                    stringXML(R.string.field_blok) -> {
+//                        resetViewsBelow(binding.layoutBlok)
+//                        binding.layoutAncak.root.visibility = View.VISIBLE
+//                        selectedBlok = item.toString()
+//                        selectedFieldCodeSpinnerIndex = position
+//
+//                        // Fetch the estate abbreviation for fallback filtering
+//                        val estateAbbr = deptList.find { it.id == selectedEstateValue }?.abbr
+//
+//                        // Find the selected field ID using either divisi OR estate abbreviation
+//                        val selectedFieldId = blokList.find { blok ->
+//                            blok.regional == selectedRegionalValue &&
+//                                    blok.dept == selectedEstateValue &&
+//                                    (blok.divisi == selectedDivisiValue || blok.dept_abbr == estateAbbr)  &&
+//                                    blok.tahun == selectedTahunTanamValue &&
+//                                    blok.kode == selectedBlok
+//
+//                        }?.id
+//                        selectedBlokValue = selectedFieldId
+//
+//                        // Debug logs to track selected values
+//                        Log.d("testing", selectedRegionalValue.toString())
+//                        Log.d("testing", selectedEstateValue.toString())
+//                        Log.d("testing", selectedDivisiValue.toString())
+//                        Log.d("testing", selectedBlok.toString())
+//                        Log.d("testing", selectedBlokValue.toString())
+//                        Log.d("testing", selectedTahunTanamValue.toString())
+//
+//                        lifecycleScope.launch {
+//                            val filteredTPH = withContext(Dispatchers.Default) {
+//                                tphList?.filter { tph ->
+//                                    tph.regional == selectedRegionalValue &&
+//                                            tph.dept == selectedEstateValue &&
+//                                            (tph.divisi == selectedDivisiValue || tph.dept_abbr == estateAbbr) && // Highlighted OR condition
+//                                            tph.tahun == selectedTahunTanamValue &&
+//                                            tph.blok == selectedBlokValue
+//                                }
+//                            }
+//
+//                            // Log the filtered TPH list for debugging
+//                            Log.d("testing", filteredTPH.toString())
+//
+//                            val mbSave = findViewById<MaterialButton>(R.id.mbSaveDataTPH)
+//                            if (!filteredTPH.isNullOrEmpty()) {
+//                                val tphNumbers = filteredTPH.map { it.nomor }
+//                                setupSpinnerView(binding.layoutTPH, tphNumbers)
+//                                binding.layoutTPH.root.visibility = View.VISIBLE
+//                                mbSave.visibility = View.VISIBLE
+//                            } else {
+//                                findViewById<LinearLayout>(R.id.layoutTPH).visibility = View.VISIBLE
+//                                mbSave.visibility = View.GONE
+//                            }
+//                        }
+//                    }
+
+                    stringXML(R.string.field_tph) -> {
                         selectedTPH = item.toString()
                         selectedTPHSpinnerIndex = position
 
@@ -1171,33 +1278,46 @@ class HomeActivity : AppCompatActivity() {
 
                         val estateAbbr = deptList.find { it.id == selectedEstateValue }?.abbr
 
-                        val selectedTPHId = tphList!!.find {
-                            it.regional == selectedRegionalValue &&
-                                    it.dept == selectedEstateValue &&
-                                    (it.divisi == selectedDivisiValue || it.dept_abbr == estateAbbr)
-                                    it.blok == selectedBlokValue &&
-                                    it.tahun == selectedTahunTanamValue &&
-                                    it.nomor == selectedTPH
+                        // Filter TPH berdasarkan kondisi
+                        val selectedTPHId = if (selectedRegionalValue == 3) {
+                            // Kondisi menggunakan estateAbbr
+                            tphList!!.find {
+                                it.regional == selectedRegionalValue &&
+                                        it.dept == selectedEstateValue &&
+                                        it.dept_abbr == estateAbbr &&
+                                        it.blok == selectedBlokValue &&
+                                        it.tahun == selectedTahunTanamValue &&
+                                        it.nomor == selectedTPH
+                            }
+                        } else {
+                            // Kondisi menggunakan divisi
+                            tphList!!.find {
+                                it.regional == selectedRegionalValue &&
+                                        it.dept == selectedEstateValue &&
+                                        it.divisi == selectedDivisiValue &&
+                                        it.blok == selectedBlokValue &&
+                                        it.tahun == selectedTahunTanamValue &&
+                                        it.nomor == selectedTPH
+                            }
                         }
 
                         selectedTPHValue = selectedTPHId?.id
                         val selectedTPHLat = selectedTPHId?.lat
                         val selectedTPHLon = selectedTPHId?.lon
                         val selectedTPHUserInput = selectedTPHId?.user_input
-                        val selectedTPHUpdateDate =AppUtils.formatDateToIndonesian(selectedTPHId?.update_date!!)
+                        val selectedTPHUpdateDate = selectedTPHId?.update_date?.let { AppUtils.formatDateToIndonesian(it) }
                         val selectedTPHStatus = selectedTPHId?.status
-
-
 
                         val latPattern = "^-?([0-8]?[0-9]|90)\\.\\d+$".toRegex()
                         val lonPattern = "^-?((1[0-7][0-9])|([0-9]?[0-9]))\\.\\d+$".toRegex()
 
+                        // Menampilkan informasi koordinat
                         if (selectedTPHLat?.matches(latPattern) == true &&
-                            selectedTPHLon?.matches(lonPattern) == true) {
+                            selectedTPHLon?.matches(lonPattern) == true
+                        ) {
                             detectLatInput.text = "Latitude: $selectedTPHLat"
                             detectLonInput.text = "Longitude: $selectedTPHLon"
-                            val selectedTPHUserInput = selectedTPHUserInput.toString() // Example input
-                            val formattedInput = selectedTPHUserInput.replaceFirstChar {
+                            val formattedInput = selectedTPHUserInput.orEmpty().replaceFirstChar {
                                 if (it.isLowerCase()) it.titlecase() else it.toString()
                             }
                             detectUserInput.text = "User Input: $formattedInput"
@@ -1207,13 +1327,71 @@ class HomeActivity : AppCompatActivity() {
                             materialCardView.visibility = View.GONE
                         }
 
+                        // Menampilkan status TPH
                         if (selectedTPHStatus == "2") {
                             materialCardViewTPHKoorSalah.visibility = View.VISIBLE
-                        }else{
+                        } else {
                             materialCardViewTPHKoorSalah.visibility = View.GONE
                         }
-
                     }
+
+
+//                    stringXML(R.string.field_tph)->{
+//                        selectedTPH = item.toString()
+//                        selectedTPHSpinnerIndex = position
+//
+//                        val materialCardView = findViewById<MaterialCardView>(R.id.cardKoordinatTerdaftar)
+//                        val materialCardViewTPHKoorSalah = findViewById<MaterialCardView>(R.id.cardKoordinatKurangTepat)
+//                        val detectUserInput = findViewById<TextView>(R.id.detect_user_input)
+//                        val detectTanggalInput = findViewById<TextView>(R.id.detect_tanggal_input)
+//                        val detectLatInput = findViewById<TextView>(R.id.detect_lat_input)
+//                        val detectLonInput = findViewById<TextView>(R.id.detect_lon_input)
+//
+//                        val estateAbbr = deptList.find { it.id == selectedEstateValue }?.abbr
+//
+//                        val selectedTPHId = tphList!!.find {
+//                            it.regional == selectedRegionalValue &&
+//                                    it.dept == selectedEstateValue &&
+//                                    (it.divisi == selectedDivisiValue || it.dept_abbr == estateAbbr)
+//                                    it.blok == selectedBlokValue &&
+//                                    it.tahun == selectedTahunTanamValue &&
+//                                    it.nomor == selectedTPH
+//                        }
+//
+//                        selectedTPHValue = selectedTPHId?.id
+//                        val selectedTPHLat = selectedTPHId?.lat
+//                        val selectedTPHLon = selectedTPHId?.lon
+//                        val selectedTPHUserInput = selectedTPHId?.user_input
+//                        val selectedTPHUpdateDate =AppUtils.formatDateToIndonesian(selectedTPHId?.update_date!!)
+//                        val selectedTPHStatus = selectedTPHId?.status
+//
+//
+//
+//                        val latPattern = "^-?([0-8]?[0-9]|90)\\.\\d+$".toRegex()
+//                        val lonPattern = "^-?((1[0-7][0-9])|([0-9]?[0-9]))\\.\\d+$".toRegex()
+//
+//                        if (selectedTPHLat?.matches(latPattern) == true &&
+//                            selectedTPHLon?.matches(lonPattern) == true) {
+//                            detectLatInput.text = "Latitude: $selectedTPHLat"
+//                            detectLonInput.text = "Longitude: $selectedTPHLon"
+//                            val selectedTPHUserInput = selectedTPHUserInput.toString() // Example input
+//                            val formattedInput = selectedTPHUserInput.replaceFirstChar {
+//                                if (it.isLowerCase()) it.titlecase() else it.toString()
+//                            }
+//                            detectUserInput.text = "User Input: $formattedInput"
+//                            detectTanggalInput.text = "Last Update: $selectedTPHUpdateDate"
+//                            materialCardView.visibility = View.VISIBLE
+//                        } else {
+//                            materialCardView.visibility = View.GONE
+//                        }
+//
+//                        if (selectedTPHStatus == "2") {
+//                            materialCardViewTPHKoorSalah.visibility = View.VISIBLE
+//                        }else{
+//                            materialCardViewTPHKoorSalah.visibility = View.GONE
+//                        }
+//
+//                    }
                 }
             }
         }
@@ -2035,6 +2213,5 @@ class HomeActivity : AppCompatActivity() {
             }
         }
     }
-
 
 }
