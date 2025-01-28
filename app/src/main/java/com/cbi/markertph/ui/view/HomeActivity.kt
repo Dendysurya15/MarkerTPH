@@ -250,18 +250,18 @@ class HomeActivity : AppCompatActivity() {
 
         binding.mbSaveDataTPH.setOnClickListener {
 
-//            if (currentAccuracy == null || currentAccuracy > 10.0f) {
-//                vibrate()
-//                AlertDialogUtility.withSingleAction(
-//                    this,
-//                    stringXML(R.string.al_back),
-//                    stringXML(R.string.al_location_not_accurate),
-//                    stringXML(R.string.al_location_under_ten_meter),
-//                    "warning.json",
-//                    R.color.colorRedDark
-//                ) {}
-//                return@setOnClickListener
-//            }
+            if (currentAccuracy == null || currentAccuracy > 10.0f) {
+                vibrate()
+                AlertDialogUtility.withSingleAction(
+                    this,
+                    stringXML(R.string.al_back),
+                    stringXML(R.string.al_location_not_accurate),
+                    stringXML(R.string.al_location_under_ten_meter),
+                    "warning.json",
+                    R.color.colorRedDark
+                ) {}
+                return@setOnClickListener
+            }
 
             if (validateAndShowErrors()) {
                 AlertDialogUtility.withTwoActions(
@@ -363,7 +363,7 @@ class HomeActivity : AppCompatActivity() {
             Triple(binding.layoutAfdeling, getString(R.string.field_afdeling), InputType.SPINNER),
             Triple(binding.layoutTahunTanam, getString(R.string.field_tahun_tanam), InputType.SPINNER),
             Triple(binding.layoutBlok, getString(R.string.field_blok), InputType.SPINNER),
-            Triple(binding.layoutAncak, getString(R.string.field_ancak), InputType.EDITTEXT),
+//            Triple(binding.layoutAncak, getString(R.string.field_ancak), InputType.EDITTEXT),
             Triple(binding.layoutTPH, getString(R.string.field_tph), InputType.SPINNER)
         )
 
@@ -1135,7 +1135,7 @@ class HomeActivity : AppCompatActivity() {
 
                     stringXML(R.string.field_blok) -> {
                         resetViewsBelow(binding.layoutBlok)
-                        binding.layoutAncak.root.visibility = View.VISIBLE
+//                        binding.layoutAncak.root.visibility = View.VISIBLE
                         selectedBlok = item.toString()
                         selectedFieldCodeSpinnerIndex = position
 
@@ -1406,7 +1406,7 @@ class HomeActivity : AppCompatActivity() {
         materialCardView.visibility = View.GONE
         val materialCardViewTPHKoorSalah = findViewById<MaterialCardView>(R.id.cardKoordinatKurangTepat)
         materialCardViewTPHKoorSalah.visibility = View.GONE
-        findViewById<LinearLayout>(R.id.layoutAncak).visibility = View.GONE
+//        findViewById<LinearLayout>(R.id.layoutAncak).visibility = View.GONE
         when (triggeredLayout) {
             binding.layoutRegional -> {
                 clearSpinnerView(binding.layoutWilayah, ::resetSelectedWilayahCode)
@@ -1484,9 +1484,9 @@ class HomeActivity : AppCompatActivity() {
             etHomeMarkerTPH.visibility = View.VISIBLE
             // Set input type based on layout
             when (layoutBinding) {
-                binding.layoutAncak -> {
-                    etHomeMarkerTPH.inputType = AndroidInputType.TYPE_CLASS_NUMBER
-                }
+//                binding.layoutAncak -> {
+//                    etHomeMarkerTPH.inputType = AndroidInputType.TYPE_CLASS_NUMBER
+//                }
                 else -> {
                     etHomeMarkerTPH.inputType = AndroidInputType.TYPE_CLASS_TEXT
                 }
@@ -1528,10 +1528,10 @@ class HomeActivity : AppCompatActivity() {
                             userInput = s.toString()
                             Log.d("EditText", "UserInput updated: $userInput")
                         }
-                        binding.layoutAncak -> {
-                            ancakInput = s.toString()
-                            Log.d("EditText", "AncakInput updated: $ancakInput")
-                        }
+//                        binding.layoutAncak -> {
+//                            ancakInput = s.toString()
+//                            Log.d("EditText", "AncakInput updated: $ancakInput")
+//                        }
                     }
                 }
                 override fun afterTextChanged(s: Editable?) {}
@@ -1586,7 +1586,7 @@ class HomeActivity : AppCompatActivity() {
                 InputType.EDITTEXT -> {
                     when (key) {
                         "User Input" -> userInput.trim().isEmpty()
-                        "Ancak Input" -> ancakInput.trim().isEmpty()
+//                        "Ancak Input" -> ancakInput.trim().isEmpty()
                         else -> layoutBinding.etHomeMarkerTPH.text.toString().trim().isEmpty()
                     }
                 }

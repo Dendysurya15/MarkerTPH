@@ -185,10 +185,10 @@
                         app:lottie_autoPlay="true" />
 
 
-                    <include
-                        layout="@layout/pertanyaan_spinner_layout"
-                        android:visibility="gone"
-                        android:id="@+id/layoutAncak"/>
+<!--                    <include-->
+<!--                        layout="@layout/pertanyaan_spinner_layout"-->
+<!--                        android:visibility="gone"-->
+<!--                        android:id="@+id/layoutAncak"/>-->
 
                     <include
                         layout="@layout/pertanyaan_spinner_layout"
